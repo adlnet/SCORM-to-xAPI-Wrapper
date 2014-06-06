@@ -1,60 +1,28 @@
 /*******************************************************************************
-ADL SCORM 2004 4th Edition MBCE
-
- 
-
-The ADL SCORM 2004 4th Ed. MBCE is licensed under
-
-Creative Commons Attribution-Noncommercial-Share Alike 3.0 United States.
-
- 
-
-The Advanced Distributed Learning Initiative allows you to:
-
-  *  Share - to copy, distribute and transmit the work.
-
-  *  Remix - to adapt the work. 
-
- 
-
-Under the following conditions:
-
-  *  Attribution. You must attribute the work in the manner specified by the author or licensor (but not in any way that suggests that they endorse you or your use of the work).
-
-  *  Noncommercial. You may not use this work for commercial purposes. 
-
-  *  Share Alike. If you alter, transform, or build upon this work, you may distribute the resulting work only under the same or similar license to this one. 
-
- 
-
-For any reuse or distribution, you must make clear to others the license terms of this work. 
-
-Any of the above conditions can be waived if you get permission from the ADL Initiative. 
-
-Nothing in this license impairs or restricts the author's moral rights.
+** ADL SCORM 2004 to xAPI Wrapper
 *******************************************************************************/
 
-/*******************************************************************************/
-// xAPI extensions an configuration values
-// Note: Do not recommend putting LRS credentials in plain text, but done here for
-//       demonstration purposes
+/*******************************************************************************
+** xAPI extensions an configuration values
+** Note: Do not recommend putting LRS credentials in plain text, but done here 
+**       for demonstration purposes
+*******************************************************************************/
 
 // Points at the LRS endpoint
 var endpoint = "https://lrs.adlnet.gov/xapi/";
 
 // Basic credentials for this client-LRS combination
-var user = "jono";
-var password = "12345";
+var user = "<lrs user>";
+var password = "<lrs password>";
 
 // LMS homepage.  Indicates the system containing the account
-var accountHomepage = "https://cloud.scorm.com";
+var accountHomepage = "<lms homepage>";
 
 // Unique identifier (URI) that describes the entire course being tracked
-var courseContextActivity = "http://www.adlnet.gov/courses/roses"
+var courseContextActivity = "<course identifier/uri>"
 
 // End xAPI extensions
 /*******************************************************************************/
-
 
 
 // local variable definitions used for finding the API
@@ -200,122 +168,6 @@ function initializeCommunication()
 
 /*******************************************************************************
 **
-** xAPI Extension
-**
-** This function is used to initiate an xAPI attempt
-**
-*******************************************************************************/
-function xAPIInitializeAttempt(){
-
-   // set endpoint and auth
-   xAPIConfigureLRS();
-
-   // set the attempt context activity
-   configureAttemptContextActivityID(retrieveDataValue("cmi.entry"));
-
-   // set the learner id to be used as the actor/account id
-   window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
-
-   var stmt = {
-      "actor":{
-         "objectType":"Agent",
-         "account":{
-            "homePage":accountHomepage,
-            "name":window.localStorage.learnerId
-         }
-      },
-      "verb":ADL.verbs.initialized,
-      "object":{
-         "objectType":"Activity",
-         "id":activity
-      },
-      "context":{
-         "contextActivities":{
-            "parent":[
-               {
-                  "id":courseContextActivity,
-                  "objectType":"Activity"
-               }
-            ],
-            "grouping":[
-               {
-                  "id":window.localStorage[activity],
-                  "objectType":"Activity"
-               }
-            ]
-         }
-      }
-   };
-
-    var response = ADL.XAPIWrapper.sendStatement(stmt);
-
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to configure LRS endpoint and basic auth values
-**
-*******************************************************************************/
-function xAPIConfigureLRS()
-{
-   var conf = {
-     "endpoint" : endpoint,
-     "user" : user,
-     "password" : password,
-   };
-
-   ADL.XAPIWrapper.changeConfig(conf);
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to get the attempt context activity (grouping) id
-**
-*******************************************************************************/
-function configureAttemptContextActivityID( cmiEntryValue )
-{
-   if( cmiEntryValue == "resume" )
-   {
-      if( window.localStorage[activity] == null )
-      {
-         window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
-      }
-   }
-   else
-   {
-      window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
-   }
-}
-
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to (most likely) get a unique guid to identify 
-** an attempt
-**
-*******************************************************************************/
-function generateUUID()
-{
-    var d = new Date().getTime();
-
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) 
-    {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-    });
-    
-    return uuid;
-};
-
-/*******************************************************************************
-**
 ** This function is used to tell the LMS to terminate the communication session
 **
 ** Inputs:  None
@@ -360,57 +212,6 @@ function terminateCommunication()
    }
 
    return result;
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to initiate an xAPI attempt
-**
-*******************************************************************************/
-function xAPITerminateAttempt(){
-
-   if (window.localStorage.learnerId == null)
-   {
-      window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
-   }
-
-   var stmt = {
-      "actor":{
-         "objectType":"Agent",
-         "account":{
-            "homePage":accountHomepage,
-            "name":window.localStorage.learnerId
-         }
-      },
-      "verb":ADL.verbs.terminated,
-      "object":{
-         "objectType":"Activity",
-         "id":activity
-      },
-      "context":{
-         "contextActivities":{
-            "parent":[
-               {
-                  "id":courseContextActivity,
-                  "objectType":"Activity"
-               }
-            ],
-            "grouping":[
-               {
-                  "id":window.localStorage[activity],
-                  "objectType":"Activity"
-               }
-            ]
-         }
-      }
-   };
-
-    var response = ADL.XAPIWrapper.sendStatement(stmt);
-
-    window.localStorage.removeItem("learnerId");
-
 }
 
 /*******************************************************************************
@@ -505,9 +306,245 @@ function storeDataValue( name, value )
 
 /*******************************************************************************
 **
+** This function requests the error code for the current error state from the
+** LMS.
+**
+** Inputs:  None
+**
+** Return:  String - The last error code.
+**
+*******************************************************************************/
+function retrieveLastErrorCode()
+{
+   // It is permitted to call GetLastError() after Terminate()
+
+   var api = getAPIHandle();
+
+   if ( api == null )
+   {
+      return "";
+   }
+   else
+   {
+      return api.GetLastError();
+   }
+}
+
+/*******************************************************************************
+**
+** This function requests a textual description of the current error state from
+** the LMS
+**
+** Inputs:  String - The error code.
+**
+** Return:  String - Textual description of the given error state.
+**
+*******************************************************************************/
+function retrieveErrorInfo( errCode )
+{
+   // It is permitted to call GetLastError() after Terminate()
+
+   var api = getAPIHandle();
+
+   if ( api == null )
+   {
+      return "";
+   }
+   else
+   {
+
+      return api.GetErrorString( errCode );
+   }
+}
+
+/*******************************************************************************
+**
+** This function requests additional diagnostic information about the given
+** error code.  This information is LMS specific, but can help a developer find
+** errors in the SCO.
+**
+** Inputs:  String - The error code.
+**
+** Return:  String - Additional diagnostic information about the given error
+**                   code
+**
+*******************************************************************************/
+function retrieveDiagnosticInfo( error )
+{
+   // It is permitted to call GetLastError() after Terminate()
+
+   var api = getAPIHandle();
+
+   if ( api == null )
+   {
+      return "";
+   }
+   else
+   {
+      return api.GetDiagnostic( error );
+   }
+}
+
+/*******************************************************************************
+**
+** This function requests that the LMS persist all data to this point in the
+** session.
+**
+** Inputs:  None
+**
+** Return:  None
+**
+*******************************************************************************/
+function persistData()
+{
+   // do not call a set after Terminate() was called
+   if ( terminated != "true" )
+   {
+      var api = getAPIHandle();
+
+      if ( api == null )
+      {
+         return "";
+      }
+      else
+      {
+         return api.Commit();
+      }
+   }
+   else
+   {
+      return "";
+   }
+}
+
+/*******************************************************************************
+**
+** Display the last error code, error description and diagnostic information.
+**
+** Inputs:  String - The error code
+**
+** Return:  None
+**
+*******************************************************************************/
+function displayErrorInfo( errCode )
+{
+   if ( _debug )
+   {
+      var errString = retrieveErrorInfo( errCode );
+      var errDiagnostic = retrieveDiagnosticInfo( errCode );
+	
+      alert( "ERROR: " + errCode + " - " + errString + "\n" +
+             "DIAGNOSTIC: " + errDiagnostic );
+   }
+}
+
+/*******************************************************************************
+**
 ** xAPI Extension
 **
 ** This function is used to initiate an xAPI attempt
+**
+*******************************************************************************/
+function xAPIInitializeAttempt(){
+
+   // set endpoint and auth
+   xAPIConfigureLRS();
+
+   // set the attempt context activity
+   configureAttemptContextActivityID(retrieveDataValue("cmi.entry"));
+
+   // set the learner id to be used as the actor/account id
+   window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+
+   var stmt = {
+      "actor":{
+         "objectType":"Agent",
+         "account":{
+            "homePage":accountHomepage,
+            "name":window.localStorage.learnerId
+         }
+      },
+      "verb":ADL.verbs.initialized,
+      "object":{
+         "objectType":"Activity",
+         "id":activity
+      },
+      "context":{
+         "contextActivities":{
+            "parent":[
+               {
+                  "id":courseContextActivity,
+                  "objectType":"Activity"
+               }
+            ],
+            "grouping":[
+               {
+                  "id":window.localStorage[activity],
+                  "objectType":"Activity"
+               }
+            ]
+         }
+      }
+   };
+
+    var response = ADL.XAPIWrapper.sendStatement(stmt);
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to terminate an xAPI attempt
+**
+*******************************************************************************/
+function xAPITerminateAttempt(){
+
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+   }
+
+   var stmt = {
+      "actor":{
+         "objectType":"Agent",
+         "account":{
+            "homePage":accountHomepage,
+            "name":window.localStorage.learnerId
+         }
+      },
+      "verb":ADL.verbs.terminated,
+      "object":{
+         "objectType":"Activity",
+         "id":activity
+      },
+      "context":{
+         "contextActivities":{
+            "parent":[
+               {
+                  "id":courseContextActivity,
+                  "objectType":"Activity"
+               }
+            ],
+            "grouping":[
+               {
+                  "id":window.localStorage[activity],
+                  "objectType":"Activity"
+               }
+            ]
+         }
+      }
+   };
+
+    var response = ADL.XAPIWrapper.sendStatement(stmt);
+
+    window.localStorage.removeItem("learnerId");
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to route set values to the appropriate functions
 **
 *******************************************************************************/
 function xAPISaveDataValue( name, value )
@@ -697,137 +734,65 @@ function xAPISetSuccess( value )
 
 }
 
-
 /*******************************************************************************
 **
-** This function requests the error code for the current error state from the
-** LMS.
+** xAPI Extension
 **
-** Inputs:  None
-**
-** Return:  String - The last error code.
+** This function is used to configure LRS endpoint and basic auth values
 **
 *******************************************************************************/
-function retrieveLastErrorCode()
+function xAPIConfigureLRS()
 {
-   // It is permitted to call GetLastError() after Terminate()
+   var conf = {
+     "endpoint" : endpoint,
+     "user" : user,
+     "password" : password,
+   };
 
-   var api = getAPIHandle();
-
-   if ( api == null )
-   {
-      return "";
-   }
-   else
-   {
-      return api.GetLastError();
-   }
+   ADL.XAPIWrapper.changeConfig(conf);
 }
 
 /*******************************************************************************
 **
-** This function requests a textual description of the current error state from
-** the LMS
+** xAPI Extension
 **
-** Inputs:  String - The error code.
-**
-** Return:  String - Textual description of the given error state.
+** This function is used to get the attempt context activity (grouping) id
 **
 *******************************************************************************/
-function retrieveErrorInfo( errCode )
+function configureAttemptContextActivityID( cmiEntryValue )
 {
-   // It is permitted to call GetLastError() after Terminate()
-
-   var api = getAPIHandle();
-
-   if ( api == null )
+   if( cmiEntryValue == "resume" )
    {
-      return "";
-   }
-   else
-   {
-
-      return api.GetErrorString( errCode );
-   }
-}
-
-/*******************************************************************************
-**
-** This function requests additional diagnostic information about the given
-** error code.  This information is LMS specific, but can help a developer find
-** errors in the SCO.
-**
-** Inputs:  String - The error code.
-**
-** Return:  String - Additional diagnostic information about the given error
-**                   code
-**
-*******************************************************************************/
-function retrieveDiagnosticInfo( error )
-{
-   // It is permitted to call GetLastError() after Terminate()
-
-   var api = getAPIHandle();
-
-   if ( api == null )
-   {
-      return "";
-   }
-   else
-   {
-      return api.GetDiagnostic( error );
-   }
-}
-
-/*******************************************************************************
-**
-** This function requests that the LMS persist all data to this point in the
-** session.
-**
-** Inputs:  None
-**
-** Return:  None
-**
-*******************************************************************************/
-function persistData()
-{
-   // do not call a set after Terminate() was called
-   if ( terminated != "true" )
-   {
-      var api = getAPIHandle();
-
-      if ( api == null )
+      if( window.localStorage[activity] == null )
       {
-         return "";
-      }
-      else
-      {
-         return api.Commit();
+         window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
       }
    }
    else
    {
-      return "";
+      window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
    }
 }
 
+
 /*******************************************************************************
 **
-** Display the last error code, error description and diagnostic information.
+** xAPI Extension
 **
-** Inputs:  String - The error code
-**
-** Return:  None
+** This function is used to (most likely) get a unique guid to identify 
+** an attempt
 **
 *******************************************************************************/
-function displayErrorInfo( errCode )
+function generateUUID()
 {
-   if ( _debug )
-   {
-      var errString = retrieveErrorInfo( errCode );
-      var errDiagnostic = retrieveDiagnosticInfo( errCode );
-	
-      alert( "ERROR: " + errCode + " - " + errString + "\n" +
-             "DIAGNOSTIC: " + errDiagnostic );
-   }
+    var d = new Date().getTime();
+
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) 
+    {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+    });
+    
+    return uuid;
 }
