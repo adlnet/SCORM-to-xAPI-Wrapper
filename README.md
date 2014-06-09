@@ -56,5 +56,16 @@ var accountHomepage = <LMS Homepage>;
 var courseContextActivity = <URI that identifies the entire course>;
 ```  
 
+### Limitations
+Currently, the SCORM to xAPI Wrapper handles a subset of SCORM data mdoel elements.  This list will be expanded over time.  Currently, the wrapper supports:
+
+* cmi.score.scaled
+* cmi.success_status
+* cmi.completion_status
+
+
+
+
+
 
 
