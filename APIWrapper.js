@@ -445,10 +445,14 @@ function displayErrorInfo( errCode )
 ** This function is used to initiate an xAPI attempt
 **
 *******************************************************************************/
-function xAPIInitializeAttempt(){
+function xAPIInitializeAttempt()
+{
 
    // set endpoint and auth
    xAPIConfigureLRS();
+
+   // set the agent profile information based on LMS learner_prefernces
+   xAPISetAgentProfile();
 
    // set the attempt context activity
    configureAttemptContextActivityID(retrieveDataValue("cmi.entry"));
@@ -497,7 +501,8 @@ function xAPIInitializeAttempt(){
 ** This function is used to terminate an xAPI attempt
 **
 *******************************************************************************/
-function xAPITerminateAttempt(){
+function xAPITerminateAttempt()
+{
 
    if (window.localStorage.learnerId == null)
    {
@@ -540,6 +545,49 @@ function xAPITerminateAttempt(){
     window.localStorage.removeItem("learnerId");
 }
 
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to initiate an xAPI attempt
+**
+*******************************************************************************/
+function xAPISetAgentProfile()
+{
+
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+   }
+
+   var language = retrieveDataValue("cmi.learner_preference.language");
+   var audioLevel = retrieveDataValue("cmi.learner_preference.audio_level");
+   var deliverySpeed = retrieveDataValue("cmi.learner_preference.delivery_speed");
+   var audioCaptioning = retrieveDataValue("cmi.learner_preference.audio_captioning");
+
+   var profile = {
+                  "language": language,
+                  "audio_level": audioLevel,
+                  "delivery_speed": deliverySpeed,
+                  "audio_captioning": audioCaptioning
+                  };
+
+      ADL.XAPIWrapper.sendAgentProfile({                                    
+                                          "account":{
+                                             "homePage":accountHomepage,
+                                             "name":window.localStorage.learnerId
+                                          }
+                                       },
+                                       activity,
+                                       profile,
+                                       null,
+                                       "*"
+                                       );
+
+
+
+
+}
 /*******************************************************************************
 **
 ** xAPI Extension
@@ -796,3 +844,6 @@ function generateUUID()
     
     return uuid;
 }
+
+
+
