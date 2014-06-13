@@ -23,7 +23,7 @@ The SCORM-to-xAPI-Wrapper relies on external dependencies to perform some action
 To update your SCORM 2004 courses to additionally track xAPI statements replace the APIWrapper.js file with the SCORM-to-xAPI-Wrapper and include the standard xapiwrapper.min.js file listed in the dependency above.
 
 
-Next, add the following code in the &lt;head&gt; sections of each SCO in your course.  Each SCO will be an 'activity' tracked by xAPI statements.  Paste the following code before the &lt;script&gt; tag that references the APIWrapper.js file.
+Next, add the following code in the &lt;head&gt; sections of each SCO in your course.  SCO launch files can be identified by looking at the imsmanifest.xml file at the root of the SCORM package.  Resource elements with adlcp:scormtype set to "sco" should contain the complete list of SCOs in the course.  Each SCO will be an 'activity' tracked by xAPI statements.  Paste the following code before the &lt;script&gt; tag that references the APIWrapper.js file.
 
 ```JavaScript
 <script type="text/javascript">
@@ -40,7 +40,7 @@ Notes:
 var activity = <manually configured URI goes here>;
 ```  
 
-Finally, several configuration values must be set in the updated APIWrapper.js file.  Near the top of the file, make configure the following lines of code:
+Finally, several configuration values must be set in the updated APIWrapper.js file.  Near the top of the file, configure the following lines of code:
 ```JavaScript
 // Points at the LRS endpoint
 var endpoint = "https://lrs.adlnet.gov/xapi/";
@@ -59,9 +59,17 @@ var courseContextActivity = <URI that identifies the entire course>;
 ### Limitations
 Currently, the SCORM to xAPI Wrapper handles a subset of SCORM data mdoel elements.  This list will be expanded over time.  Currently, the wrapper supports:
 
+Learner Interaction Data
 * cmi.score.scaled
 * cmi.success_status
 * cmi.completion_status
+
+Learner Preference Data
+* cmi.learner_preferences.language
+* cmi.learner\_preferences.audio_level
+* cmi.learner\_preferences.audio_captioning
+* cmi.learner\_preferences.delivery_speed
+
 
 
 
