@@ -1,6 +1,8 @@
 SCORM-to-xAPI-Wrapper
 =====================
 
+[Link for Bootcamp](https://drive.google.com/a/adlnet.gov/?tab=mo#folders/0B7Cy_QOGO8g-Y0xNMm1tSWhXZTQ)
+
 SCORM 2004 API Wrapper modified to do simple communications to an LRS via Experience API statements. [Read more about the Experience API Spec here.](https://github.com/adlnet/xAPI-Spec/blob/master/xAPI.md)
 
 ## Contributing to the project
