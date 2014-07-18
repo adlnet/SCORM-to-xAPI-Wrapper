@@ -96,6 +96,26 @@ With the understanding that:
 **
 *******************************************************************************/
 
+/*******************************************************************************
+** xAPI extensions an configuration values
+** Note: Do not recommend putting LRS credentials in plain text, but done here 
+**       for demonstration purposes
+*******************************************************************************/
+
+// Points at the LRS endpoint
+var endpoint = "https://lrs.adlnet.gov/xapi/";
+
+// Basic credentials for this client-LRS combination
+var user = "<lrs user>";
+var password = "<lrs password>";
+
+// LMS homepage.  Indicates the system containing the account
+var accountHomepage = "<lms homepage>";
+
+// Unique identifier (URI) that describes the entire course being tracked
+var courseContextActivity = "<course identifier/uri>"
+
+
 var debug = true;  // set this to false to turn debugging off
 
 var output = window.console; // output can be set to any object that has a log(string) function
