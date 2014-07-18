@@ -115,6 +115,9 @@ var accountHomepage = "<lms homepage>";
 // Unique identifier (URI) that describes the entire course being tracked
 var courseContextActivity = "<course identifier/uri>"
 
+// End xAPI extensions
+/*******************************************************************************/
+
 
 var debug = true;  // set this to false to turn debugging off
 
