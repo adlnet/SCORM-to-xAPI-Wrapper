@@ -1,81 +1,4 @@
-/****************************************************************************
-SCORM_12_APIWrapper.js
-© 2000, 2011 Advanced Distributed Learning (ADL). Some Rights Reserved.
-*****************************************************************************
-
-Advanced Distributed Learning ("ADL") grants you ("Licensee") a  non-exclusive, 
-royalty free, license to use and redistribute this  software in source and binary 
-code form, provided that i) this copyright  notice and license appear on all 
-copies of the software; and ii) Licensee does not utilize the software in a 
-manner which is disparaging to ADL.
-
-This software is provided "AS IS," without a warranty of any kind.  
-ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING 
-ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR 
-NON-INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL AND ITS LICENSORS SHALL NOT BE LIABLE 
-FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR 
-DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL OR ITS LICENSORS 
-BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, 
-CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE 
-THEORY OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE SOFTWARE, EVEN IF 
-ADL HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-
-*****************************************************************************
-*SCORM_12_APIwrapper.js code is licensed under the Creative Commons
-Attribution-ShareAlike 3.0 Unported License.
-
-To view a copy of this license:
-
-     - Visit http://creativecommons.org/licenses/by-sa/3.0/ 
-     - Or send a letter to
-            Creative Commons, 444 Castro Street,  Suite 900, Mountain View,
-            California, 94041, USA.
-
-The following is a summary of the full license which is available at:
-
-      - http://creativecommons.org/licenses/by-sa/3.0/legalcode
-
-*****************************************************************************
-
-Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
-
-You are free to:
-
-     - Share : to copy, distribute and transmit the work
-     - Remix : to adapt the work
-
-Under the following conditions:
-
-     - Attribution: You must attribute the work in the manner specified by 
-       the author or licensor (but not in any way that suggests that they 
-       endorse you or your use of the work).
-
-     - Share Alike: If you alter, transform, or build upon this work, you 
-       may distribute the resulting work only under the same or similar 
-       license to this one.
-
-With the understanding that:
-
-     - Waiver: Any of the above conditions can be waived if you get permission 
-       from the copyright holder.
-
-     - Public Domain: Where the work or any of its elements is in the public 
-       domain under applicable law, that status is in no way affected by the license.
-
-     - Other Rights: In no way are any of the following rights affected by the license:
-
-           * Your fair dealing or fair use rights, or other applicable copyright 
-             exceptions and limitations;
-
-           * The author's moral rights;
-
-           * Rights other persons may have either in the work itself or in how the 
-             work is used, such as publicity or privacy rights.
-
-     - Notice: For any reuse or distribution, you must make clear to others the 
-               license terms of this work.
-
-****************************************************************************/
+/* ADL SCORM 1.2 to xAPI Wrapper https://github.com/adlnet/SCORM-to-xAPI-Wrapper */
 /*******************************************************************************
 ** Usage: Executable course content can call the API Wrapper
 **      functions as follows:
@@ -165,6 +88,7 @@ function doLMSInitialize()
    else
    {
 	   initialized = true;
+     xAPIInitializeAttempt();
    }
 
    return result.toString();
@@ -194,6 +118,7 @@ function doLMSFinish()
    }
    else
    {
+      xAPITerminateAttempt();
       // call the LMSFinish function that should be implemented by the API
       var result = api.LMSFinish("");
       if (result.toString() != "true")
@@ -281,6 +206,10 @@ function doLMSSetValue(name, value)
       {
          var err = ErrorHandler();
          message("LMSSetValue("+name+", "+value+") failed. \n"+ err.code + ": " + err.string);
+      }
+      else 
+      {
+        xAPISaveDataValue(name, value);
       }
    }
 
@@ -532,4 +461,414 @@ function message(str)
    {
       output.log(str);
    }
+}
+
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to initiate an xAPI attempt
+**
+*******************************************************************************/
+function xAPIInitializeAttempt()
+{
+
+   // set endpoint and auth
+   xAPIConfigureLRS();
+
+   // set the agent profile information based on LMS learner_prefernces
+   xAPISetAgentProfile();
+
+   // set the attempt context activity
+   configureAttemptContextActivityID(doLMSGetValue("cmi.core.entry"));
+
+   // set the learner id to be used as the actor/account id
+   window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
+
+   var stmt = {
+      "actor":{
+         "objectType":"Agent",
+         "account":{
+            "homePage":accountHomepage,
+            "name":window.localStorage.learnerId
+         }
+      },
+      "verb":ADL.verbs.initialized,
+      "object":{
+         "objectType":"Activity",
+         "id":activity
+      },
+      "context":{
+         "contextActivities":{
+            "parent":[
+               {
+                  "id":courseContextActivity,
+                  "objectType":"Activity"
+               }
+            ],
+            "grouping":[
+               {
+                  "id":window.localStorage[activity],
+                  "objectType":"Activity"
+               }
+            ]
+         }
+      }
+   };
+
+    var response = ADL.XAPIWrapper.sendStatement(stmt);
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to terminate an xAPI attempt
+**
+*******************************************************************************/
+function xAPITerminateAttempt()
+{
+
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
+   }
+
+   var stmt = {
+      "actor":{
+         "objectType":"Agent",
+         "account":{
+            "homePage":accountHomepage,
+            "name":window.localStorage.learnerId
+         }
+      },
+      "verb":ADL.verbs.terminated,
+      "object":{
+         "objectType":"Activity",
+         "id":activity
+      },
+      "context":{
+         "contextActivities":{
+            "parent":[
+               {
+                  "id":courseContextActivity,
+                  "objectType":"Activity"
+               }
+            ],
+            "grouping":[
+               {
+                  "id":window.localStorage[activity],
+                  "objectType":"Activity"
+               }
+            ]
+         }
+      }
+   };
+
+    var response = ADL.XAPIWrapper.sendStatement(stmt);
+
+    window.localStorage.removeItem("learnerId");
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to initiate an xAPI attempt
+**
+*******************************************************************************/
+function xAPISetAgentProfile()
+{
+
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
+   }
+
+   var language = doLMSGetValue("cmi.student_preference.language");
+   var audioLevel = doLMSGetValue("cmi.student_preference.audio");
+   var deliverySpeed = doLMSGetValue("cmi.student_preference.speed");
+   var audioCaptioning = doLMSGetValue("cmi.student_preference.text");
+
+   var profile = {
+                  "language": language,
+                  "audio_level": audioLevel,
+                  "delivery_speed": deliverySpeed,
+                  "audio_captioning": audioCaptioning
+                  };
+
+      ADL.XAPIWrapper.sendAgentProfile({                                    
+                                          "account":{
+                                             "homePage":accountHomepage,
+                                             "name":window.localStorage.learnerId
+                                          }
+                                       },
+                                       activity,
+                                       profile,
+                                       null,
+                                       "*"
+                                       );
+
+
+
+
+}
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to route set values to the appropriate functions
+**
+*******************************************************************************/
+function xAPISaveDataValue( name, value )
+{
+   // Handle only certain scorm data model elements for now.  
+   // Can extend this list
+   switch (name) {
+      case "cmi.core.score.raw":
+         xAPISetScore( value );
+         break;
+      case "cmi.core.lesson_status":
+         if (value === "completed")
+          xAPISetComplete( value );
+         else if (value === "passed" || value === "failed")
+          xAPISetSuccess( value );
+         break;
+      default:
+         break;      
+   }
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to set a scaled score
+**
+*******************************************************************************/
+function xAPISetScore( value )
+{
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
+   }
+
+   var stmt = {
+      "actor":{
+         "objectType":"Agent",
+         "account":{
+            "homePage":accountHomepage,
+            "name":window.localStorage.learnerId
+         }
+      },
+      "verb":ADL.verbs.scored,
+      "object":{
+         "objectType":"Activity",
+         "id":activity
+      },
+      "result":{
+         "score":{
+            
+         }
+      },
+      "context":{
+         "contextActivities":{
+            "parent":[
+               {
+                  "id":courseContextActivity,
+                  "objectType":"Activity"
+               }
+            ],
+            "grouping":[
+               {
+                  "id":window.localStorage[activity],
+                  "objectType":"Activity"
+               }
+            ]
+         }
+      }
+   };
+
+   "raw":parseFloat(value)
+
+    var response = ADL.XAPIWrapper.sendStatement(stmt);
+
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to complete an activity
+**
+*******************************************************************************/
+function xAPISetComplete( value )
+{
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
+   }
+
+   if( value == "completed")
+   {
+      var stmt = {
+         "actor":{
+            "objectType":"Agent",
+            "account":{
+               "homePage":accountHomepage,
+               "name":window.localStorage.learnerId
+            }
+         },
+         "verb":ADL.verbs.completed,
+         "object":{
+            "objectType":"Activity",
+            "id":activity
+         },
+         "context":{
+            "contextActivities":{
+               "parent":[
+                  {
+                     "id":courseContextActivity,
+                     "objectType":"Activity"
+                  }
+               ],
+               "grouping":[
+                  {
+                     "id":window.localStorage[activity],
+                     "objectType":"Activity"
+                  }
+               ]
+            }
+         }
+      };
+
+       var response = ADL.XAPIWrapper.sendStatement(stmt); 
+   }
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to set pass/failed on an activity
+**
+*******************************************************************************/
+function xAPISetSuccess( value )
+{
+   if (window.localStorage.learnerId == null)
+   {
+      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
+   }
+
+   var verb = "";
+
+   if( value == "passed" )
+   {
+      verb = ADL.verbs.passed;
+   }
+   else if ( value == "failed" )
+   {
+      verb = ADL.verbs.failed;
+   }
+
+   if ( verb != "" )
+   {
+      var stmt = {
+         "actor":{
+            "objectType":"Agent",
+            "account":{
+               "homePage":accountHomepage,
+               "name":window.localStorage.learnerId
+            }
+         },
+         "verb":verb,
+         "object":{
+            "objectType":"Activity",
+            "id":activity
+         },
+         "context":{
+            "contextActivities":{
+               "parent":[
+                  {
+                     "id":courseContextActivity,
+                     "objectType":"Activity"
+                  }
+               ],
+               "grouping":[
+                  {
+                     "id":window.localStorage[activity],
+                     "objectType":"Activity"
+                  }
+               ]
+            }
+         }
+      };
+
+       var response = ADL.XAPIWrapper.sendStatement(stmt);      
+   }
+
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to configure LRS endpoint and basic auth values
+**
+*******************************************************************************/
+function xAPIConfigureLRS()
+{
+   var conf = {
+     "endpoint" : endpoint,
+     "user" : user,
+     "password" : password,
+   };
+
+   ADL.XAPIWrapper.changeConfig(conf);
+}
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to get the attempt context activity (grouping) id
+**
+*******************************************************************************/
+function configureAttemptContextActivityID( cmiEntryValue )
+{
+   if( cmiEntryValue == "resume" )
+   {
+      if( window.localStorage[activity] == null )
+      {
+         window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
+      }
+   }
+   else
+   {
+      window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
+   }
+}
+
+
+/*******************************************************************************
+**
+** xAPI Extension
+**
+** This function is used to (most likely) get a unique guid to identify 
+** an attempt
+**
+*******************************************************************************/
+function generateUUID()
+{
+    var d = new Date().getTime();
+
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) 
+    {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+    });
+    
+    return uuid;
 }
