@@ -88,7 +88,7 @@ function doLMSInitialize()
    else
    {
 	   initialized = true;
-     xAPIInitializeAttempt();
+      xAPIInitializeAttempt();
    }
 
    return result.toString();
