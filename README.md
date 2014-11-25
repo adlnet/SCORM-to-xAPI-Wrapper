@@ -69,19 +69,19 @@ Currently, the SCORM to xAPI Wrapper handles a subset of SCORM Run-Time behavior
 
 The following data model elements or behaviors result in associated xAPI statements:
 
-*Core SCO Data*
+**Core SCO Data**
 * cmi.score.scaled
 * cmi.success_status
 * cmi.completion_status
 * cmi.exit
 
-*Interactions Data*
+**Interactions Data**
 * cmi.interactions.n.id
 * cmi.interactions.n.type
 * cmi.interactions.n.description
 * cmi.interactions.n.learner_response
 
-*Behaviors*
+**Behaviors**
 * SCO Initialize
 * SCO Terminates
 * SCO Resumes
@@ -89,46 +89,46 @@ The following data model elements or behaviors result in associated xAPI stateme
 
 The following data is stored as either profile or state information
 
-*Activity Profile* 
+**Activity Profile** 
 
-Identified by:
+*Identified by:*
 * Activity IRI
 * Profile ID - http://adlnet.gov/xapi/profile/scorm/activity-profile
-Data:
+
+*Data:*
 * completion_threshold (value of cmi.completion_threshold data)
 * launch_data (value of cmi.launch_data)
 * max_time_allowed (value of cmi.max_time_allowed)
 * scaled_passing_score (value of cmi.scaled_passing_score)
 * time_limit_action (value of cmi.time_limit_action)
 
-*Activity State*
-Identified by:
+**Activity State**
+*Identified by:*
 * Activity IRI
 * Actor
 * State ID = http://adlnet.gov/xapi/profile/scorm/activity-state
-Data:
+
+*Data:*
 * attempts (Ordered list of attempt IRIs found as context in statements)
 
-*Attempt State*
-Identified by:
+**Attempt State**
+*Identified by:*
 * Attempt IRI (context activity)
 * Actor
 * State ID = http://adlnet.gov/xapi/profile/scorm/attempt-state
-Data:
+
+*Data:*
 * location (value of cmi.location)
 * preferences (see below for preferences data type)
 * credit (value of cmi.credit)
 * mode (value of cmi.mode)
 * suspend_data (value of cmi.suspend_data)
 * total_time (value of cmi.total_time)
-Preferences Data Type (see reference above)
+
+*Preferences Data Type (see reference above)*
 * language (value of cmi.learner_preference.language)
 * audio_level (value of cmi.learner_preference.audio_level)
 * delivery_speed (value of cmi.learner_preference.delivery_speed)
 * audio_captioning (value of cmi.learner_preference.audio_captioning)
 
 It is strongly recommended that implementers read and understand the [Experience API SCORM Profile](https://github.com/adlnet/xAPI-SCORM-Profile).  Additional data model elements and behaviors identified in this profile will be implemented in a subsequent version.
-
-
-
-
