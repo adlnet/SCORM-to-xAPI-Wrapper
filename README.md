@@ -103,6 +103,7 @@ The following data is stored as either profile or state information
 * time_limit_action (value of cmi.time_limit_action)
 
 **Activity State**
+
 *Identified by:*
 * Activity IRI
 * Actor
@@ -112,6 +113,7 @@ The following data is stored as either profile or state information
 * attempts (Ordered list of attempt IRIs found as context in statements)
 
 **Attempt State**
+
 *Identified by:*
 * Attempt IRI (context activity)
 * Actor
