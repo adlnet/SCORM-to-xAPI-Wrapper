@@ -69,8 +69,7 @@ xapi = function(){
       return {
          actor:{
                objectType:"Agent",
-               account:
-               {
+               account:{
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                } 
@@ -123,8 +122,7 @@ xapi = function(){
       return {
          actor:{
                objectType:"Agent",
-               account:
-               {
+               account:{
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                }
@@ -213,13 +211,18 @@ xapi = function(){
 
       // set the attempt context activity based on the SCOs state
       // todo: add error handling to SCORM call
-      configureAttemptContextActivityID(retrieveDataValue("cmi.entry"));
+      var entry = retrieveDataValue("cmi.entry");
+      configureAttemptContextActivityID(entry);
 
       // Set activity profile info and attempt state every initialize
       setActivityProfile();
       setAttemptState();
 
-      sendSimpleStatement(ADL.verbs.initialized);
+      // Determine whether this is a new or resumed attempt (based on cmi.entry)
+      var startVerb = (entry == "resume") ? ADL.verbs.resumed : ADL.verbs.initialized
+
+      // Execute the statement
+      sendSimpleStatement(startVerb);
    }
 
    /*******************************************************************************
@@ -239,7 +242,16 @@ xapi = function(){
    *******************************************************************************/
    var suspendAttempt = function()
    {
-      sendSimpleStatement(ADL.verbs.suspended);
+      //sendSimpleStatement(ADL.verbs.suspended);
+      var stmt = getBaseStatement();
+      stmt.verb = ADL.verbs.suspended;
+
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
+      stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
+
+      var stmtWithResult = getStmtWithResult(stmt);
+      var response = ADL.XAPIWrapper.sendStatement(stmtWithResult);      
    }
 
    /*******************************************************************************
@@ -251,12 +263,30 @@ xapi = function(){
    {
       //sendSimpleStatement(ADL.verbs.terminated);
       var stmt = getBaseStatement();
-      stmt.verb = ADL.verbs.terminated;
+      
+      // get the exit and use appropriate verb
+      var exit = retrieveDataValue("cmi.exit");
+      var stopVerb = (exit == "suspend") ? ADL.verbs.suspended : ADL.verbs.terminated;
+
+      stmt.verb = stopVerb;
 
       // window.localStorage[activity] uses activity id to return the most recent
       // attempt
       stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
 
+      var stmtWithResult = getStmtWithResult(stmt);
+      var response = ADL.XAPIWrapper.sendStatement(stmtWithResult);      
+
+      window.localStorage.removeItem("learnerId");
+   }
+
+   /*******************************************************************************
+   **
+   ** This function is used to complete the stmt result for terminate and suspend
+   **
+   *******************************************************************************/
+   var getStmtWithResult = function(baseStatement)
+   {
       // todo: check for null values and switch for SCORM 1.2
       var success = retrieveDataValue("cmi.success_status");
       var completion = retrieveDataValue("cmi.completion_status");
@@ -264,11 +294,6 @@ xapi = function(){
       var scoreRaw = retrieveDataValue("cmi.score.raw");
       var scoreMin = retrieveDataValue("cmi.score.min");
       var scoreMax = retrieveDataValue("cmi.score.max");
-
-      console.log("raw: " + scoreRaw);
-      console.log("min: " + scoreMin);
-      console.log("max: " + scoreMax);
-      console.log("scaled: " + scoreScaled);
 
       var resultSet = false;
       var resultJson = {};
@@ -302,35 +327,35 @@ xapi = function(){
       }
 
       // set sccaled score if set by sco
-      if(scoreScaled != "")
+      if(scoreScaled != undefined && scoreScaled != "")
       {
          scoreSet = true;
          resultSet = true;
-         scoreJson.scaled =  scoreScaled;
+         scoreJson.scaled =  parseFloat(scoreScaled);
       }
 
       // set raw score if set by sco
-      if(scoreRaw != "")
+      if(scoreRaw != undefined && scoreRaw != "")
       {
          scoreSet = true;
          resultSet = true;
-         scoreJson.raw =  scoreRaw;
+         scoreJson.raw =  parseFloat(scoreRaw);
       }
       
       // set min score if set by sco
-      if(scoreMin != "")
+      if(scoreMin != undefined && scoreMin != "")
       {
          scoreSet = true;
          resultSet = true;
-         scoreJson.min =  scoreMin;
+         scoreJson.min =  parseFloat(scoreMin);
       }
 
       // set max score if set by sco
-      if(scoreMax != "")
+      if(scoreMax != undefined && scoreMax != "")
       {
          scoreSet = true;
          resultSet = true;
-         scoreJson.max =  scoreMax;
+         scoreJson.max =  parseFloat(scoreMax);
       }
 
       // set the score object in with the rest of the result object
@@ -342,12 +367,10 @@ xapi = function(){
       // add result to the base statement
       if (resultSet)
       {
-         stmt.result = resultJson;
+         baseStatement.result = resultJson;
       }
 
-      var response = ADL.XAPIWrapper.sendStatement(stmt);      
-
-      window.localStorage.removeItem("learnerId");
+      return baseStatement;
    }
 
    /*******************************************************************************
@@ -578,10 +601,10 @@ xapi = function(){
             case "cmi.success_status":
                setSuccess( value );
                break;
-            case "cmi.exit":
-               if (value == "suspend")
-                  suspendAttempt();            
-               break;
+            //case "cmi.exit":
+            //   if (value == "suspend")
+            //      suspendAttempt();            
+            //   break;
             default:
                break;          
          }
@@ -808,7 +831,7 @@ xapi = function(){
          }
 
          // send a resume statement
-         resumeAttempt();
+         //resumeAttempt();
 
       }
       else
