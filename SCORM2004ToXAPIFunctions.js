@@ -11,6 +11,8 @@ xapi = function(){
 
    var _debug = true;
 
+   
+
    /*******************************************************************************
    **
    ** Configuration object for a specific instance of the wrapper
@@ -67,32 +69,39 @@ xapi = function(){
       return {
          actor:{
                objectType:"Agent",
-               account:{
+               account:
+               {
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
-               }
-            },
-            verb:{},
-            object:{
-               objectType:"Activity",
-               id:activity
-            },
-            context:{
-               contextActivities:{
-                  parent:[
-                     {
-                        id:config.courseId,
-                        objectType:"Activity"
-                     }
-                  ],
-                  grouping:[
-                     {
-                        id:"",
-                        objectType:"Activity"
-                     }
-                  ]
-               }
+               } 
+         },
+         verb:{},
+         object:{
+            objectType:"Activity",
+            id:activity,
+            definition:{
+               type: "http://adlnet.gov/expapi/activities/lesson"
             }
+         },
+         context:{
+            contextActivities:{
+               grouping:[
+                  {
+                     id:"",
+                     objectType:"Activity"
+                  },
+                  {
+                     id:config.courseId,
+                     objectType:"Activity"
+                  }
+               ],
+               category:[
+                  {
+                     id:"http://adlnet.gov/xapi/profile/scorm",
+                  }
+               ]
+            }
+         }
       };   
    }
 
@@ -114,7 +123,8 @@ xapi = function(){
       return {
          actor:{
                objectType:"Agent",
-               account:{
+               account:
+               {
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                }
@@ -136,10 +146,6 @@ xapi = function(){
                contextActivities:{
                   parent:[
                      {
-                        id:config.courseId,
-                        objectType:"Activity"
-                     },
-                     {
                         id:activity,
                         objectType:"Activity"
                      }
@@ -148,6 +154,15 @@ xapi = function(){
                      {
                         id:"",
                         objectType:"Activity"
+                     },
+                     {
+                        id:config.courseId,
+                        objectType:"Activity"
+                     }
+                  ],
+                  category:[
+                     {
+                        id:"http://adlnet.gov/xapi/profile/scorm",
                      }
                   ]
                }
@@ -234,7 +249,103 @@ xapi = function(){
    *******************************************************************************/
    var terminateAttempt = function() 
    {
-      sendSimpleStatement(ADL.verbs.terminated);
+      //sendSimpleStatement(ADL.verbs.terminated);
+      var stmt = getBaseStatement();
+      stmt.verb = ADL.verbs.terminated;
+
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
+      stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
+
+      // todo: check for null values and switch for SCORM 1.2
+      var success = retrieveDataValue("cmi.success_status");
+      var completion = retrieveDataValue("cmi.completion_status");
+      var scoreScaled = retrieveDataValue("cmi.score.scaled");
+      var scoreRaw = retrieveDataValue("cmi.score.raw");
+      var scoreMin = retrieveDataValue("cmi.score.min");
+      var scoreMax = retrieveDataValue("cmi.score.max");
+
+      console.log("raw: " + scoreRaw);
+      console.log("min: " + scoreMin);
+      console.log("max: " + scoreMax);
+      console.log("scaled: " + scoreScaled);
+
+      var resultSet = false;
+      var resultJson = {};
+      var scoreSet = false;
+      var scoreJson = {};
+
+      // create all of the statement json 
+
+      // set success if known
+      if(success == "passed")
+      {
+         resultSet = true;
+         resultJson.success =  true;
+      }
+      else if(success == "failed")
+      {
+         resultSet = true;
+         resultJson.success = false;
+      }
+
+      // set completion if known
+      if(completion == "completed")
+      {
+         resultSet = true;
+         resultJson.completion =  true;
+      }
+      else if(completion == "incomplete")
+      {
+         resultSet = true;
+         resultJson.completion = false;
+      }
+
+      // set sccaled score if set by sco
+      if(scoreScaled != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.scaled =  scoreScaled;
+      }
+
+      // set raw score if set by sco
+      if(scoreRaw != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.raw =  scoreRaw;
+      }
+      
+      // set min score if set by sco
+      if(scoreMin != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.min =  scoreMin;
+      }
+
+      // set max score if set by sco
+      if(scoreMax != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.max =  scoreMax;
+      }
+
+      // set the score object in with the rest of the result object
+      if (scoreSet)
+      {
+         resultJson.score = scoreJson;
+      }
+
+      // add result to the base statement
+      if (resultSet)
+      {
+         stmt.result = resultJson;
+      }
+
+      var response = ADL.XAPIWrapper.sendStatement(stmt);      
 
       window.localStorage.removeItem("learnerId");
    }
@@ -338,6 +449,8 @@ xapi = function(){
    *******************************************************************************/
    var setActivityState = function()
    {
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
       var attemptIri = window.localStorage[activity];
 
       var agent = getAgent();
@@ -372,6 +485,8 @@ xapi = function(){
    *******************************************************************************/
    var setAttemptState = function()
    {
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
       var attemptIri = window.localStorage[activity];
       var agent = getAgent();
 
@@ -683,6 +798,8 @@ xapi = function(){
    *******************************************************************************/
    var configureAttemptContextActivityID = function (cmiEntryValue)
    {
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
       if( cmiEntryValue == "resume" )
       {
          if( window.localStorage[activity] == null )
