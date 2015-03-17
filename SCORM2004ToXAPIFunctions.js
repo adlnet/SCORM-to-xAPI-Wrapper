@@ -77,7 +77,6 @@ xapi = function(){
          },
          verb:{},
          object:{
-            objectType:"Activity",
             id:activity,
             definition:{
                type: "http://adlnet.gov/expapi/activities/lesson"
@@ -88,16 +87,22 @@ xapi = function(){
                grouping:[
                   {
                      id:"",
-                     objectType:"Activity"
+                     objectType:"Activity",
+                     definition:{
+                        type: "http://adlnet.gov/expapi/activities/attempt"
+                     }
                   },
                   {
                      id:config.courseId,
-                     objectType:"Activity"
+                     objectType:"Activity",
+                     definition:{
+                        type: "http://adlnet.gov/expapi/activities/course"
+                     }
                   }
                ],
                category:[
                   {
-                     id:"http://adlnet.gov/xapi/profile/scorm",
+                     id:"http://adlnet.gov/xapi/profile/scorm"
                   }
                ]
             }
@@ -148,21 +153,30 @@ xapi = function(){
                      {
                         id:activity,
                         objectType:"Activity"
+                        definition:{
+                           type: "http://adlnet.gov/expapi/activities/lesson"
+                        }
                      }
                   ],
                   grouping:[
                      {
                         id:"",
-                        objectType:"Activity"
+                        objectType:"Activity",
+                        definition:{
+                           type: "http://adlnet.gov/expapi/activities/attempt"
+                        }
                      },
                      {
                         id:config.courseId,
-                        objectType:"Activity"
+                        objectType:"Activity",
+                        definition:{
+                           type: "http://adlnet.gov/expapi/activities/course"
+                        }
                      }
                   ],
                   category:[
                      {
-                        id:"http://adlnet.gov/xapi/profile/scorm",
+                        id:"http://adlnet.gov/xapi/profile/scorm"
                      }
                   ]
                }
@@ -842,7 +856,7 @@ xapi = function(){
    *******************************************************************************/
    var getInteractionIri = function(interactionId)
    {
-      return activity + "/interaction/" + encodeURIComponent(interactionId);
+      return activity + "/interactions/" + encodeURIComponent(interactionId);
    }
 
    /*******************************************************************************
