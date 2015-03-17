@@ -69,7 +69,8 @@ xapi = function(){
       return {
          actor:{
                objectType:"Agent",
-               account:{
+               account:
+               {
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                } 
@@ -122,7 +123,8 @@ xapi = function(){
       return {
          actor:{
                objectType:"Agent",
-               account:{
+               account:
+               {
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                }
@@ -173,6 +175,37 @@ xapi = function(){
       
    /*******************************************************************************
    **
+   ** Voided base statement
+   ** 
+   ** Must set verb and object to execute
+   **
+   *******************************************************************************/
+   var getVoidedBaseStatement = function()
+   {
+      if (window.localStorage.learnerId == null)
+      {
+         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+      }
+
+      return {
+         actor:{
+               objectType:"Agent",
+               account:
+               {
+                  homePage:config.lmsHomePage,
+                  name:window.localStorage.learnerId
+               } 
+         },
+         verb:{},
+         object:{
+            objectType:"StatementRef",
+            id:""
+         }
+      };   
+   }
+      
+   /*******************************************************************************
+   **
    ** Gets agent - account corresponding to LMS user registration
    ** 
    ** Used when accessing state objects
@@ -209,21 +242,70 @@ xapi = function(){
       // deprecated - set the agent profile information based on LMS learner_prefernces
       //setAgentProfile();
 
-      // set the attempt context activity based on the SCOs state
       // todo: add error handling to SCORM call
+      // Determine whether this is a new or resumed attempt (based on cmi.entry)
       var entry = retrieveDataValue("cmi.entry");
+      var isResumed = (entry == "resume"); 
+
+      // if "resume", determine if the user issued a suspend sequencing nav 
+      // request and a terminate was called instead of a suspend and if so, fix
+      if(isResumed)
+      {
+         adjustFinishStatementForResume();
+      }
+
+      // set the attempt context activity based on the SCOs state
       configureAttemptContextActivityID(entry);
 
       // Set activity profile info and attempt state every initialize
       setActivityProfile();
       setAttemptState();
 
-      // Determine whether this is a new or resumed attempt (based on cmi.entry)
-      var startVerb = (entry == "resume") ? ADL.verbs.resumed : ADL.verbs.initialized
+      // Set the appropriate verb based on resumed or new attempt
+      var startVerb = isResumed ? ADL.verbs.resumed : ADL.verbs.initialized;
 
       // Execute the statement
       sendSimpleStatement(startVerb);
    }
+
+   /*******************************************************************************
+   **
+   ** This function looks at the last terminate or statement for a given attempt.
+   ** If "terminated", the terminated stmt is voided and a suspend is issued
+   **
+   *******************************************************************************/
+   var adjustFinishStatementForResume = function()
+   {
+      var search = ADL.XAPIWrapper.searchParams();
+      search['verb'] = ADL.verbs.terminated.id;
+      search['activity'] = window.localStorage[activity];
+      search['related_activities'] = true;
+
+      var res = ADL.XAPIWrapper.getStatements(search);
+
+      if (res.statements.length == 1)
+      {
+         // there is a terminate verb, so must void it and replace with suspended
+         // Note: if there is length == 0, no issue.  
+         //       if length > 1, things are very messed up. Do nothing.
+         
+         var terminateStmt = res.statements[0];
+
+         // send the voided statement
+         var voidedStmt = getVoidedBaseStatement();
+         voidedStmt.verb = ADL.verbs.voided;
+         voidedStmt.object.id = terminateStmt.id;
+
+         var response = ADL.XAPIWrapper.sendStatement(voidedStmt); 
+
+         // send a suspended statement to replace the (voided) terminated statement
+         suspendAttempt(terminateStmt.timestamp);
+
+
+      }
+
+   }
+
 
    /*******************************************************************************
    **
@@ -240,11 +322,16 @@ xapi = function(){
    ** This function is used to suspent an attempt
    **
    *******************************************************************************/
-   var suspendAttempt = function()
+   var suspendAttempt = function(timestamp)
    {
       //sendSimpleStatement(ADL.verbs.suspended);
       var stmt = getBaseStatement();
       stmt.verb = ADL.verbs.suspended;
+
+      if (timestamp != undefined && timestamp != null)
+      {
+         stmt.timestamp = timestamp;
+      }
 
       // window.localStorage[activity] uses activity id to return the most recent
       // attempt
