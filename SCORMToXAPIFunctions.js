@@ -52,6 +52,10 @@ xapi = function(){
       attemptStateIri:"http://adlnet.gov/xapi/profile/scorm/attempt-state"
    };
 
+   var scormVersionConfig = {};
+
+   var exitSetToSuspend = false;
+
    /*******************************************************************************
    **
    ** Base statement
@@ -63,7 +67,7 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
       return {
@@ -122,7 +126,7 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
       return {
@@ -139,9 +143,6 @@ xapi = function(){
                objectType:"Activity",
                id:"",
                definition:{
-                  description:{
-                     "en-US":""
-                  },
                   type: "http://adlnet.gov/expapi/activities/cmi.interaction",
                   interactionType:"",
                   correctResponsesPattern:[]
@@ -152,7 +153,7 @@ xapi = function(){
                   parent:[
                      {
                         id:activity,
-                        objectType:"Activity"
+                        objectType:"Activity",
                         definition:{
                            type: "http://adlnet.gov/expapi/activities/lesson"
                         }
@@ -198,7 +199,7 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
       return {
@@ -229,7 +230,7 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
       
       var agent = {account:
@@ -258,7 +259,9 @@ xapi = function(){
 
       // todo: add error handling to SCORM call
       // Determine whether this is a new or resumed attempt (based on cmi.entry)
-      var entry = retrieveDataValue("cmi.entry");
+      var entry = retrieveDataValue(scormVersionConfig.entryElement);
+
+
       var isResumed = (entry == "resume"); 
 
       // if "resume", determine if the user issued a suspend sequencing nav 
@@ -272,6 +275,7 @@ xapi = function(){
       configureAttemptContextActivityID(entry);
 
       // Set activity profile info and attempt state every initialize
+      // todo: these cause acceptable errors.  ensure they are not written to console
       setActivityProfile();
       setAttemptState();
 
@@ -366,8 +370,7 @@ xapi = function(){
       var stmt = getBaseStatement();
       
       // get the exit and use appropriate verb
-      var exit = retrieveDataValue("cmi.exit");
-      var stopVerb = (exit == "suspend") ? ADL.verbs.suspended : ADL.verbs.terminated;
+      var stopVerb = (exitSetToSuspend) ? ADL.verbs.suspended : ADL.verbs.terminated;
 
       stmt.verb = stopVerb;
 
@@ -388,13 +391,12 @@ xapi = function(){
    *******************************************************************************/
    var getStmtWithResult = function(baseStatement)
    {
-      // todo: check for null values and switch for SCORM 1.2
-      var success = retrieveDataValue("cmi.success_status");
-      var completion = retrieveDataValue("cmi.completion_status");
-      var scoreScaled = retrieveDataValue("cmi.score.scaled");
-      var scoreRaw = retrieveDataValue("cmi.score.raw");
-      var scoreMin = retrieveDataValue("cmi.score.min");
-      var scoreMax = retrieveDataValue("cmi.score.max");
+      var success = retrieveDataValue(scormVersionConfig.successElement);
+      var completion = retrieveDataValue(scormVersionConfig.completionElement);
+      var scoreScaled = retrieveDataValue(scormVersionConfig.scoreScaledElement);
+      var scoreRaw = retrieveDataValue(scormVersionConfig.scoreRawElement);
+      var scoreMin = retrieveDataValue(scormVersionConfig.scoreMinElement);
+      var scoreMax = retrieveDataValue(scormVersionConfig.scoreMaxElement);
 
       var resultSet = false;
       var resultJson = {};
@@ -427,7 +429,7 @@ xapi = function(){
          resultJson.completion = false;
       }
 
-      // set sccaled score if set by sco
+      // set scaled score if set by sco
       if(scoreScaled != undefined && scoreScaled != "")
       {
          scoreSet = true;
@@ -441,6 +443,11 @@ xapi = function(){
          scoreSet = true;
          resultSet = true;
          scoreJson.raw =  parseFloat(scoreRaw);
+
+         // if SCORM 1.2, use raw score / 100 for scaled score
+         if(!config.isScorm2004){
+            scoreJson.scaled = parseFloat(scoreRaw) / 100;
+         }
       }
       
       // set min score if set by sco
@@ -486,13 +493,13 @@ xapi = function(){
 
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
-      var lang = retrieveDataValue("cmi.learner_preference.language");
-      var audioLevel = retrieveDataValue("cmi.learner_preference.audio_level");
-      var deliverySpeed = retrieveDataValue("cmi.learner_preference.delivery_speed");
-      var audioCaptioning = retrieveDataValue("cmi.learner_preference.audio_captioning");
+      var lang = retrieveDataValue(scormVersionConfig.languageElement);
+      var audioLevel = retrieveDataValue(scormVersionConfig.audioLevelElement);
+      var deliverySpeed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
+      var audioCaptioning = retrieveDataValue(scormVersionConfig.audioCaptioningElement);
 
       var profile = {
                      language: lang,
@@ -529,20 +536,19 @@ xapi = function(){
       if(ap == null)
       {
          // get comments from lms (if any)
-         var cmi_num_comments_from_lms_count = retrieveDataValue("cmi.comments_from_lms._count");
-         
+         //var cmi_num_comments_from_lms_count = retrieveDataValue("cmi.comments_from_lms._count");
          // todo: get the comments, if any and add to array
 
          // get completion threshold (if supplied in manifest)
-         var cmi_completion_threshold = retrieveDataValue("cmi.completion_threshold");
-         var cmi_launch_data = retrieveDataValue("cmi.launch_data");
-         var cmi_max_time_allowed = retrieveDataValue("cmi.max_time_allowed");
-         var cmi_scaled_passing_score = retrieveDataValue("cmi.scaled_passing_score");
-         var cmi_time_limit_action = retrieveDataValue("cmi.time_limit_action");
+         var cmi_completion_threshold = retrieveDataValue(scormVersionConfig.completionThresholdElement);
+         var cmi_launch_data = retrieveDataValue(scormVersionConfig.launchDataElement);
+         var cmi_max_time_allowed = retrieveDataValue(scormVersionConfig.maxTimeAllowedElement);
+         var cmi_scaled_passing_score = retrieveDataValue(scormVersionConfig.scaledPassingScoreElement);
+         var cmi_time_limit_action = retrieveDataValue(scormVersionConfig.timeLimitActionElement);
 
          var activityProfile = {};
 
-         if (cmi_completion_threshold != "")
+         if (config.isScorm2004 && cmi_completion_threshold != "")
             activityProfile.completion_threshold = cmi_completion_threshold;
 
          if (cmi_launch_data != "")
@@ -616,12 +622,12 @@ xapi = function(){
 
       // location, preferences object, credit, lesson_mode, suspend_data, 
       // total_time, adl_data
-      var cmi_location = retrieveDataValue("cmi.location");
+      var cmi_location = retrieveDataValue(scormVersionConfig.locationElement);
 
-      var cmi_language = retrieveDataValue("cmi.learner_preference.language");
-      var cmi_audio_level = retrieveDataValue("cmi.learner_preference.audio_level");
-      var cmi_delivery_speed = retrieveDataValue("cmi.learner_preference.delivery_speed");
-      var cmi_audio_captioning = retrieveDataValue("cmi.learner_preference.audio_captioning");
+      var cmi_language = retrieveDataValue(scormVersionConfig.languageElement);
+      var cmi_audio_level = retrieveDataValue(scormVersionConfig.audioLevelElement);
+      var cmi_delivery_speed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
+      var cmi_audio_captioning = retrieveDataValue(scormVersionConfig.audioCaptioningElement);
 
       var preferences = {
                            language: cmi_language,
@@ -630,12 +636,12 @@ xapi = function(){
                            audio_captioning: cmi_audio_captioning
                         };
 
-      var cmi_credit = retrieveDataValue("cmi.credit");
-      var cmi_mode = retrieveDataValue("cmi.mode");
-      var cmi_suspend_data = retrieveDataValue("cmi.suspend_data");
-      var cmi_total_time = retrieveDataValue("cmi.total_time");
+      var cmi_credit = retrieveDataValue(scormVersionConfig.creditElement);
+      var cmi_mode = retrieveDataValue(scormVersionConfig.modeElement);
+      var cmi_suspend_data = retrieveDataValue(scormVersionConfig.suspendDataElement);
+      var cmi_total_time = retrieveDataValue(scormVersionConfig.totalTimeElement);
 
-      // todo: implement ADL data buckets and store in attempt state
+      // todo: implement adl.data buckets and store in attempt state
 
       // create the state object
       var state = {}; 
@@ -693,19 +699,18 @@ xapi = function(){
       {
          // Handle only non-array scorm data model elements  
          switch (name) {
-            case "cmi.score.scaled":
-               setScore( value );
+            case scormVersionConfig.scoreScaledElement:
+               setScore(value);
                break;
-            case "cmi.completion_status":
+            case scormVersionConfig.completionElement:
                setComplete( value );
                break;
-            case "cmi.success_status":
+            case scormVersionConfig.successElement:
                setSuccess( value );
                break;
-            //case "cmi.exit":
-            //   if (value == "suspend")
-            //      suspendAttempt();            
-            //   break;
+            case scormVersionConfig.exitElement:
+               exitSetToSuspend = (value == "suspend");            
+               break;
             default:
                break;          
          }
@@ -788,7 +793,7 @@ xapi = function(){
             }
          }
       }
-      else if (subElement == "learner_response")
+      else if (subElement == "learner_response" || subElement == "student_response")
       {
          // find interaction with the same index and set type in JSON array
          for (var i=0; i < cachedInteractions.length; i++)
@@ -811,8 +816,11 @@ xapi = function(){
                stmt.result.response = cachedInteractions[i].learner_response;
 
                // todo: shouldn't assume en-US - implement with default if not specified, or use what was sent
-               stmt.object.definition.description["en-US"] = cachedInteractions[i].description;
-
+               if(config.isScorm2004)
+               {
+                  stmt.object.definition.description = {"en-US": cachedInteractions[i].description};
+               }
+               
                // set the specific interaction type
                stmt.object.definition.interactionType = cachedInteractions[i].type;
 
@@ -838,6 +846,7 @@ xapi = function(){
                      break;          
                }
 
+               // todo: make the subelement that you send stmt on configurable
                // send statement
                var response = ADL.XAPIWrapper.sendStatement(stmt);
 
@@ -866,12 +875,15 @@ xapi = function(){
    *******************************************************************************/
    var setScore = function(value)
    {
+      // For scorm 1.2, must divide raw by 100
+      var score = (config.isScorm2004) ? parseFloat(value) : parseFloat(value) / 100; 
+
       var stmt = getBaseStatement();
       stmt.verb = ADL.verbs.scored;
       stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
 
       // todo: add error handling if value is not a valid scaled score
-      stmt.result =  {score: {scaled:parseFloat(value)}};
+      stmt.result =  {score: {scaled:score}};
 
       var response = ADL.XAPIWrapper.sendStatement(stmt);
    }
@@ -896,7 +908,52 @@ xapi = function(){
    *******************************************************************************/
    var setSuccess = function(value)
    {
-      sendSimpleStatement(ADL.verbs[value]);
+      // if SCORM 1.2, these could be complete/incomplete
+      if(value == "passed" || value == "failed")
+         sendSimpleStatement(ADL.verbs[value]);
+   }
+
+   /*******************************************************************************
+   **
+   ** This function is used to configure LRS endpoint and other values
+   **
+   *******************************************************************************/
+   var setConfig = function(iConfig)
+   {
+      config.lrs.endpoint = iConfig.lrs.endpoint;
+      config.lrs.user = iConfig.lrs.user;
+      config.lrs.password = iConfig.lrs.password;
+      config.courseId = iConfig.courseId;
+      config.lmsHomePage = iConfig.lmsHomePage;
+      config.isScorm2004 = iConfig.isScorm2004;
+
+      // setup SCORM object based on configuration
+      scormVersionConfig = {
+         learnerIdElement: (config.isScorm2004) ? "cmi.learner_id" : "cmi.core.student_id",
+         entryElement: ((config.isScorm2004 == true) ? "cmi.entry" : "cmi.core.entry"),
+         exitElement: (config.isScorm2004) ? "cmi.exit" : "cmi.core.exit",
+         successElement: (config.isScorm2004) ? "cmi.success_status" : "cmi.core.lesson_status",
+         completionElement: (config.isScorm2004) ? "cmi.completion_status" : "cmi.core.lesson_status",
+         scoreRawElement: (config.isScorm2004) ? "cmi.score.raw" : "cmi.core.score.raw",
+         scoreMinElement: (config.isScorm2004) ? "cmi.score.min" : "cmi.core.score.min",
+         scoreMaxElement: (config.isScorm2004) ? "cmi.score.max" : "cmi.core.score.max",
+         scoreScaledElement: (config.isScorm2004) ? "cmi.score.scaled" : "cmi.core.score.raw",
+         languageElement: (config.isScorm2004) ? "cmi.learner_preference.language" : "cmi.student_preference.language",
+         audioLevelElement: (config.isScorm2004) ? "cmi.learner_preference.audio_level" : "cmi.student_preference.audio",
+         deliverySpeedElement: (config.isScorm2004) ? "cmi.learner_preference.delivery_speed" : "cmi.student_preference.speed",
+         audioCaptioningElement: (config.isScorm2004) ? "cmi.learner_preference.audio_captioning" : "cmi.student_preference.text",
+         completionThresholdElement: (config.isScorm2004) ? "cmi.completion_threshold" : "",
+         launchDataElement: "cmi.launch_data",
+         maxTimeAllowedElement: (config.isScorm2004) ? "cmi.max_time_allowed" : "cmi.student_data.max_time_allowed",
+         scaledPassingScoreElement: (config.isScorm2004) ? "cmi.scaled_passing_score" : "cmi.student_data.mastery_score",
+         timeLimitActionElement: (config.isScorm2004) ? "cmi.time_limit_action" : "cmi.student_data.time_limit_action",
+         locationElement: (config.isScorm2004) ? "cmi.location" : "cmi.core.lesson_location",
+         creditElement: (config.isScorm2004) ? "cmi.credit" : "cmi.core.credit",
+         modeElement: (config.isScorm2004) ? "cmi.mode" : "cmi.core.lesson_mode",
+         suspendDataElement: "cmi.suspend_data",
+         totalTimeElement: (config.isScorm2004) ? "cmi.total_time" : "cmi.core.total_time"
+      }
+
    }
 
    /*******************************************************************************
@@ -979,7 +1036,7 @@ xapi = function(){
        return uuid;
    }
 
-   return{config:config,
+   return{setConfig:setConfig,
       initializeAttempt:initializeAttempt,
       resumeAttempt:resumeAttempt,
       suspendAttempt:suspendAttempt,
