@@ -6,12 +6,6 @@ For detailed technical information on xAPI, [read the Experience API Spec](https
 
 Note that using these wrappers WILL result in xAPI statements about your learners in an LRS.  ENSURE THAT YOU UNDERSTAND YOUR LRSs PRIVACY AND SECURITY FEATURES BEFORE IMPLEMENTING THIS APPROACH.
 
-## Contributing to the project
-We welcome contributions to this project. Fork this repository, 
-make changes and submit pull requests. If you're not comfortable 
-with editing the code, please [submit an issue](https://github.com/adlnet/SCORM-to-xAPI-Wrapper/issues) and we'll be happy 
-to address it.  
-
 ## SCORM2004/APIWrapper.js
 Javascript SCORM 2004 API wrapper with new xAPI object (Implemented in SCORMToXAPIFunctions.js).  
 This javascript file is typically used in SCORM 2004 courses.  If the ADL-provided ADLWrapper.js file is used in your SCORM courses, it can be replaced with this file.
@@ -143,4 +137,21 @@ The following data is stored as either profile or state information
 
 It is strongly recommended that implementers read and understand the [Experience API SCORM Profile](https://github.com/adlnet/xAPI-SCORM-Profile).  Additional data model elements and behaviors identified in this profile will be implemented in a subsequent version.
 
+## Contributing to the project
+We welcome contributions to this project. Fork this repository, make changes and submit pull requests. If you're not comfortable with editing the code, please [submit an issue](https://github.com/adlnet/SCORM-to-xAPI-Wrapper/issues) and we'll be happy to address it.  
 
+
+## License
+   Copyright &copy;2016 Advanced Distributed Learning
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
