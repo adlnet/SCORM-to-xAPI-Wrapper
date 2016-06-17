@@ -1,23 +1,23 @@
 /****************************************************************************
 SCORM_12_APIWrapper.js
-© 2000, 2011 Advanced Distributed Learning (ADL). Some Rights Reserved.
+ï¿½ 2000, 2011 Advanced Distributed Learning (ADL). Some Rights Reserved.
 *****************************************************************************
 
-Advanced Distributed Learning ("ADL") grants you ("Licensee") a  non-exclusive, 
-royalty free, license to use and redistribute this  software in source and binary 
-code form, provided that i) this copyright  notice and license appear on all 
-copies of the software; and ii) Licensee does not utilize the software in a 
+Advanced Distributed Learning ("ADL") grants you ("Licensee") a  non-exclusive,
+royalty free, license to use and redistribute this  software in source and binary
+code form, provided that i) this copyright  notice and license appear on all
+copies of the software; and ii) Licensee does not utilize the software in a
 manner which is disparaging to ADL.
 
-This software is provided "AS IS," without a warranty of any kind.  
-ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING 
-ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR 
-NON-INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL AND ITS LICENSORS SHALL NOT BE LIABLE 
-FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR 
-DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL OR ITS LICENSORS 
-BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, 
-CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE 
-THEORY OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE SOFTWARE, EVEN IF 
+This software is provided "AS IS," without a warranty of any kind.
+ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR
+NON-INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL AND ITS LICENSORS SHALL NOT BE LIABLE
+FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL OR ITS LICENSORS
+BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL,
+CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE
+THEORY OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE SOFTWARE, EVEN IF
 ADL HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 *****************************************************************************
@@ -26,7 +26,7 @@ Attribution-ShareAlike 3.0 Unported License.
 
 To view a copy of this license:
 
-     - Visit http://creativecommons.org/licenses/by-sa/3.0/ 
+     - Visit http://creativecommons.org/licenses/by-sa/3.0/
      - Or send a letter to
             Creative Commons, 444 Castro Street,  Suite 900, Mountain View,
             California, 94041, USA.
@@ -46,33 +46,33 @@ You are free to:
 
 Under the following conditions:
 
-     - Attribution: You must attribute the work in the manner specified by 
-       the author or licensor (but not in any way that suggests that they 
+     - Attribution: You must attribute the work in the manner specified by
+       the author or licensor (but not in any way that suggests that they
        endorse you or your use of the work).
 
-     - Share Alike: If you alter, transform, or build upon this work, you 
-       may distribute the resulting work only under the same or similar 
+     - Share Alike: If you alter, transform, or build upon this work, you
+       may distribute the resulting work only under the same or similar
        license to this one.
 
 With the understanding that:
 
-     - Waiver: Any of the above conditions can be waived if you get permission 
+     - Waiver: Any of the above conditions can be waived if you get permission
        from the copyright holder.
 
-     - Public Domain: Where the work or any of its elements is in the public 
+     - Public Domain: Where the work or any of its elements is in the public
        domain under applicable law, that status is in no way affected by the license.
 
      - Other Rights: In no way are any of the following rights affected by the license:
 
-           * Your fair dealing or fair use rights, or other applicable copyright 
+           * Your fair dealing or fair use rights, or other applicable copyright
              exceptions and limitations;
 
            * The author's moral rights;
 
-           * Rights other persons may have either in the work itself or in how the 
+           * Rights other persons may have either in the work itself or in how the
              work is used, such as publicity or privacy rights.
 
-     - Notice: For any reuse or distribution, you must make clear to others the 
+     - Notice: For any reuse or distribution, you must make clear to others the
                license terms of this work.
 
 ****************************************************************************/
@@ -82,7 +82,7 @@ With the understanding that:
 **
 **    javascript:
 **          var result = doLMSInitialize();
-**          if (result != true) 
+**          if (result != true)
 **          {
 **             // handle error
 **          }
@@ -132,7 +132,7 @@ retrieveDataValue = doLMSGetValue;
 function doLMSInitialize()
 {
    if (initialized) return "true";
-   
+
    var api = getAPIHandle();
    if (api == null)
    {
@@ -184,7 +184,7 @@ function doLMSInitialize()
 function doLMSFinish()
 {
    if (! initialized) return "true";
-   
+
    var api = getAPIHandle();
    if (api == null)
    {
@@ -206,7 +206,7 @@ function doLMSFinish()
    }
 
    initialized = false;
-   
+
    return result.toString();
 }
 
@@ -300,7 +300,7 @@ function doLMSSetValue(name, value)
 **          false if failed.
 **
 ** Description:
-** Commits the data to the LMS. 
+** Commits the data to the LMS.
 **
 *******************************************************************************/
 function doLMSCommit()
@@ -336,7 +336,7 @@ function doLMSCommit()
 ** Return:  The error code that was set by the last LMS function call
 **
 ** Description:
-** Call the LMSGetLastError function 
+** Call the LMSGetLastError function
 **
 *******************************************************************************/
 function doLMSGetLastError()
@@ -359,7 +359,7 @@ function doLMSGetLastError()
 ** Return:  The textual description that corresponds to the input error code
 **
 ** Description:
-** Call the LMSGetErrorString function 
+** Call the LMSGetErrorString function
 **
 ********************************************************************************/
 function doLMSGetErrorString(errorCode)
@@ -378,7 +378,7 @@ function doLMSGetErrorString(errorCode)
 **
 ** Function doLMSGetDiagnostic(errorCode)
 ** Inputs:  errorCode - Error Code(integer format), or null
-** Return:  The vendor specific textual description that corresponds to the 
+** Return:  The vendor specific textual description that corresponds to the
 **          input error code
 **
 ** Description:
@@ -411,7 +411,7 @@ function doLMSGetDiagnostic(errorCode)
 ** var last_error = ErrorHandler();
 ** if (last_error.code != _NoError.code)
 ** {
-**    message("Encountered an error. Code: " + last_error.code + 
+**    message("Encountered an error. Code: " + last_error.code +
 **                                "\nMessage: " + last_error.string +
 **                                "\nDiagnostics: " + last_error.diagnostic);
 ** }
@@ -435,7 +435,7 @@ function ErrorHandler()
    {
       // an error was encountered so display the error description
       error.string = api.LMSGetErrorString(error.code);
-      error.diagnostic = api.LMSGetDiagnostic(""); 
+      error.diagnostic = api.LMSGetDiagnostic("");
    }
 
    return error;
@@ -480,12 +480,12 @@ function findAPI(win)
    {
       findAPITries++;
       // Note: 7 is an arbitrary number, but should be more than sufficient
-      if (findAPITries > 7) 
+      if (findAPITries > 7)
       {
          message("Error finding API -- too deeply nested.");
          return null;
       }
-      
+
       win = win.parent;
    }
    return win.API;
@@ -498,7 +498,7 @@ function findAPI(win)
 ** Return:  If an API object is found, it's returned, otherwise null is returned
 **
 ** Description:
-** This function looks for an object named API, first in the current window's 
+** This function looks for an object named API, first in the current window's
 ** frame hierarchy and then, if necessary, in the current window's opener window
 ** hierarchy (if there is an opener window).
 **
@@ -523,12 +523,12 @@ function getAPI()
 ** Inputs:  String - message you want to send to the designated output
 ** Return:  none
 ** Depends on: boolean debug to indicate if output is wanted
-**             object output to handle the messages. must implement a function 
+**             object output to handle the messages. must implement a function
 **             log(string)
 **
 ** Description:
-** This function outputs messages to a specified output. You can define your own 
-** output object. It will just need to implement a log(string) function. This 
+** This function outputs messages to a specified output. You can define your own
+** output object. It will just need to implement a log(string) function. This
 ** interface was used so that the output could be assigned the window.console object.
 *******************************************************************************/
 function message(str)
