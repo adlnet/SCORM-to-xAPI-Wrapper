@@ -1,11 +1,88 @@
-/* ADL SCORM 1.2 to xAPI Wrapper https://github.com/adlnet/SCORM-to-xAPI-Wrapper */
+/****************************************************************************
+SCORM_12_APIWrapper.js
+� 2000, 2011 Advanced Distributed Learning (ADL). Some Rights Reserved.
+*****************************************************************************
+
+Advanced Distributed Learning ("ADL") grants you ("Licensee") a  non-exclusive,
+royalty free, license to use and redistribute this  software in source and binary
+code form, provided that i) this copyright  notice and license appear on all
+copies of the software; and ii) Licensee does not utilize the software in a
+manner which is disparaging to ADL.
+
+This software is provided "AS IS," without a warranty of any kind.
+ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR
+NON-INFRINGEMENT, ARE HEREBY EXCLUDED.  ADL AND ITS LICENSORS SHALL NOT BE LIABLE
+FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES.  IN NO EVENT WILL ADL OR ITS LICENSORS
+BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL,
+CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE
+THEORY OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE SOFTWARE, EVEN IF
+ADL HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+*****************************************************************************
+*SCORM_12_APIwrapper.js code is licensed under the Creative Commons
+Attribution-ShareAlike 3.0 Unported License.
+
+To view a copy of this license:
+
+     - Visit http://creativecommons.org/licenses/by-sa/3.0/
+     - Or send a letter to
+            Creative Commons, 444 Castro Street,  Suite 900, Mountain View,
+            California, 94041, USA.
+
+The following is a summary of the full license which is available at:
+
+      - http://creativecommons.org/licenses/by-sa/3.0/legalcode
+
+*****************************************************************************
+
+Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
+
+You are free to:
+
+     - Share : to copy, distribute and transmit the work
+     - Remix : to adapt the work
+
+Under the following conditions:
+
+     - Attribution: You must attribute the work in the manner specified by
+       the author or licensor (but not in any way that suggests that they
+       endorse you or your use of the work).
+
+     - Share Alike: If you alter, transform, or build upon this work, you
+       may distribute the resulting work only under the same or similar
+       license to this one.
+
+With the understanding that:
+
+     - Waiver: Any of the above conditions can be waived if you get permission
+       from the copyright holder.
+
+     - Public Domain: Where the work or any of its elements is in the public
+       domain under applicable law, that status is in no way affected by the license.
+
+     - Other Rights: In no way are any of the following rights affected by the license:
+
+           * Your fair dealing or fair use rights, or other applicable copyright
+             exceptions and limitations;
+
+           * The author's moral rights;
+
+           * Rights other persons may have either in the work itself or in how the
+             work is used, such as publicity or privacy rights.
+
+     - Notice: For any reuse or distribution, you must make clear to others the
+               license terms of this work.
+
+****************************************************************************/
 /*******************************************************************************
 ** Usage: Executable course content can call the API Wrapper
 **      functions as follows:
 **
 **    javascript:
 **          var result = doLMSInitialize();
-**          if (result != true) 
+**          if (result != true)
 **          {
 **             // handle error
 **          }
@@ -18,29 +95,6 @@
 **
 **
 *******************************************************************************/
-
-/*******************************************************************************
-** xAPI extensions an configuration values
-** Note: Do not recommend putting LRS credentials in plain text, but done here 
-**       for demonstration purposes
-*******************************************************************************/
-
-// Points at the LRS endpoint
-var endpoint = "https://lrs.adlnet.gov/xapi/";
-
-// Basic credentials for this client-LRS combination
-var user = "<lrs user>";
-var password = "<lrs password>";
-
-// LMS homepage.  Indicates the system containing the account
-var accountHomepage = "<lms homepage>";
-
-// Unique identifier (URI) that describes the entire course being tracked
-var courseContextActivity = "<course identifier/uri>"
-
-// End xAPI extensions
-/*******************************************************************************/
-
 
 var debug = true;  // set this to false to turn debugging off
 
@@ -55,6 +109,13 @@ var initialized = false;
 
 // local variable definitions
 var apiHandle = null;
+
+// xAPI Extention helper >
+// Pass-throughs to handle other common SCORM 1.2 wrapper versions.
+initializeCommunication = doLMSInitialize;
+terminateCommunication = doLMSFinish;
+storeDataValue = doLMSSetValue;
+retrieveDataValue = doLMSGetValue;
 
 /*******************************************************************************
 **
@@ -71,7 +132,7 @@ var apiHandle = null;
 function doLMSInitialize()
 {
    if (initialized) return "true";
-   
+
    var api = getAPIHandle();
    if (api == null)
    {
@@ -88,7 +149,21 @@ function doLMSInitialize()
    else
    {
 	   initialized = true;
-      xAPIInitializeAttempt();
+
+    // xAPI Extensions
+    var config = {
+        lrs:{
+           endpoint:"<LRS Endpoint>",
+           user:"<LRS User>",
+           password:"<LRS Password>"
+        },
+        courseId:"<Course IRI>",
+        lmsHomePage:"<LMS Home Page>",
+        isScorm2004:false
+    }; // isSCORM2004:true above - to convert SCORM 2004 courses
+    xapi.setConfig(config);
+    xapi.initializeAttempt();
+
    }
 
    return result.toString();
@@ -109,7 +184,7 @@ function doLMSInitialize()
 function doLMSFinish()
 {
    if (! initialized) return "true";
-   
+
    var api = getAPIHandle();
    if (api == null)
    {
@@ -118,7 +193,9 @@ function doLMSFinish()
    }
    else
    {
-      xAPITerminateAttempt();
+      // xAPI Extension
+      xapi.terminateAttempt();
+
       // call the LMSFinish function that should be implemented by the API
       var result = api.LMSFinish("");
       if (result.toString() != "true")
@@ -129,7 +206,7 @@ function doLMSFinish()
    }
 
    initialized = false;
-   
+
    return result.toString();
 }
 
@@ -201,15 +278,14 @@ function doLMSSetValue(name, value)
    }
    else
    {
+      // xAPI Extension
+      xapi.saveDataValue(name, value);
+
       result = api.LMSSetValue(name, value);
       if (result.toString() != "true")
       {
          var err = ErrorHandler();
          message("LMSSetValue("+name+", "+value+") failed. \n"+ err.code + ": " + err.string);
-      }
-      else 
-      {
-        xAPISaveDataValue(name, value);
       }
    }
 
@@ -224,7 +300,7 @@ function doLMSSetValue(name, value)
 **          false if failed.
 **
 ** Description:
-** Commits the data to the LMS. 
+** Commits the data to the LMS.
 **
 *******************************************************************************/
 function doLMSCommit()
@@ -260,7 +336,7 @@ function doLMSCommit()
 ** Return:  The error code that was set by the last LMS function call
 **
 ** Description:
-** Call the LMSGetLastError function 
+** Call the LMSGetLastError function
 **
 *******************************************************************************/
 function doLMSGetLastError()
@@ -283,7 +359,7 @@ function doLMSGetLastError()
 ** Return:  The textual description that corresponds to the input error code
 **
 ** Description:
-** Call the LMSGetErrorString function 
+** Call the LMSGetErrorString function
 **
 ********************************************************************************/
 function doLMSGetErrorString(errorCode)
@@ -302,7 +378,7 @@ function doLMSGetErrorString(errorCode)
 **
 ** Function doLMSGetDiagnostic(errorCode)
 ** Inputs:  errorCode - Error Code(integer format), or null
-** Return:  The vendor specific textual description that corresponds to the 
+** Return:  The vendor specific textual description that corresponds to the
 **          input error code
 **
 ** Description:
@@ -335,7 +411,7 @@ function doLMSGetDiagnostic(errorCode)
 ** var last_error = ErrorHandler();
 ** if (last_error.code != _NoError.code)
 ** {
-**    message("Encountered an error. Code: " + last_error.code + 
+**    message("Encountered an error. Code: " + last_error.code +
 **                                "\nMessage: " + last_error.string +
 **                                "\nDiagnostics: " + last_error.diagnostic);
 ** }
@@ -359,7 +435,7 @@ function ErrorHandler()
    {
       // an error was encountered so display the error description
       error.string = api.LMSGetErrorString(error.code);
-      error.diagnostic = api.LMSGetDiagnostic(""); 
+      error.diagnostic = api.LMSGetDiagnostic("");
    }
 
    return error;
@@ -404,12 +480,12 @@ function findAPI(win)
    {
       findAPITries++;
       // Note: 7 is an arbitrary number, but should be more than sufficient
-      if (findAPITries > 7) 
+      if (findAPITries > 7)
       {
          message("Error finding API -- too deeply nested.");
          return null;
       }
-      
+
       win = win.parent;
    }
    return win.API;
@@ -422,7 +498,7 @@ function findAPI(win)
 ** Return:  If an API object is found, it's returned, otherwise null is returned
 **
 ** Description:
-** This function looks for an object named API, first in the current window's 
+** This function looks for an object named API, first in the current window's
 ** frame hierarchy and then, if necessary, in the current window's opener window
 ** hierarchy (if there is an opener window).
 **
@@ -447,12 +523,12 @@ function getAPI()
 ** Inputs:  String - message you want to send to the designated output
 ** Return:  none
 ** Depends on: boolean debug to indicate if output is wanted
-**             object output to handle the messages. must implement a function 
+**             object output to handle the messages. must implement a function
 **             log(string)
 **
 ** Description:
-** This function outputs messages to a specified output. You can define your own 
-** output object. It will just need to implement a log(string) function. This 
+** This function outputs messages to a specified output. You can define your own
+** output object. It will just need to implement a log(string) function. This
 ** interface was used so that the output could be assigned the window.console object.
 *******************************************************************************/
 function message(str)
@@ -461,414 +537,4 @@ function message(str)
    {
       output.log(str);
    }
-}
-
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to initiate an xAPI attempt
-**
-*******************************************************************************/
-function xAPIInitializeAttempt()
-{
-
-   // set endpoint and auth
-   xAPIConfigureLRS();
-
-   // set the agent profile information based on LMS learner_prefernces
-   xAPISetAgentProfile();
-
-   // set the attempt context activity
-   configureAttemptContextActivityID(doLMSGetValue("cmi.core.entry"));
-
-   // set the learner id to be used as the actor/account id
-   window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
-
-   var stmt = {
-      "actor":{
-         "objectType":"Agent",
-         "account":{
-            "homePage":accountHomepage,
-            "name":window.localStorage.learnerId
-         }
-      },
-      "verb":ADL.verbs.initialized,
-      "object":{
-         "objectType":"Activity",
-         "id":activity
-      },
-      "context":{
-         "contextActivities":{
-            "parent":[
-               {
-                  "id":courseContextActivity,
-                  "objectType":"Activity"
-               }
-            ],
-            "grouping":[
-               {
-                  "id":window.localStorage[activity],
-                  "objectType":"Activity"
-               }
-            ]
-         }
-      }
-   };
-
-    var response = ADL.XAPIWrapper.sendStatement(stmt);
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to terminate an xAPI attempt
-**
-*******************************************************************************/
-function xAPITerminateAttempt()
-{
-
-   if (window.localStorage.learnerId == null)
-   {
-      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
-   }
-
-   var stmt = {
-      "actor":{
-         "objectType":"Agent",
-         "account":{
-            "homePage":accountHomepage,
-            "name":window.localStorage.learnerId
-         }
-      },
-      "verb":ADL.verbs.terminated,
-      "object":{
-         "objectType":"Activity",
-         "id":activity
-      },
-      "context":{
-         "contextActivities":{
-            "parent":[
-               {
-                  "id":courseContextActivity,
-                  "objectType":"Activity"
-               }
-            ],
-            "grouping":[
-               {
-                  "id":window.localStorage[activity],
-                  "objectType":"Activity"
-               }
-            ]
-         }
-      }
-   };
-
-    var response = ADL.XAPIWrapper.sendStatement(stmt);
-
-    window.localStorage.removeItem("learnerId");
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to initiate an xAPI attempt
-**
-*******************************************************************************/
-function xAPISetAgentProfile()
-{
-
-   if (window.localStorage.learnerId == null)
-   {
-      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
-   }
-
-   var language = doLMSGetValue("cmi.student_preference.language");
-   var audioLevel = doLMSGetValue("cmi.student_preference.audio");
-   var deliverySpeed = doLMSGetValue("cmi.student_preference.speed");
-   var audioCaptioning = doLMSGetValue("cmi.student_preference.text");
-
-   var profile = {
-                  "language": language,
-                  "audio_level": audioLevel,
-                  "delivery_speed": deliverySpeed,
-                  "audio_captioning": audioCaptioning
-                  };
-
-      ADL.XAPIWrapper.sendAgentProfile({                                    
-                                          "account":{
-                                             "homePage":accountHomepage,
-                                             "name":window.localStorage.learnerId
-                                          }
-                                       },
-                                       activity,
-                                       profile,
-                                       null,
-                                       "*"
-                                       );
-
-
-
-
-}
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to route set values to the appropriate functions
-**
-*******************************************************************************/
-function xAPISaveDataValue( name, value )
-{
-   // Handle only certain scorm data model elements for now.  
-   // Can extend this list
-   switch (name) {
-      case "cmi.core.score.raw":
-         xAPISetScore( value );
-         break;
-      case "cmi.core.lesson_status":
-         if (value === "completed")
-          xAPISetComplete( value );
-         else if (value === "passed" || value === "failed")
-          xAPISetSuccess( value );
-         break;
-      default:
-         break;      
-   }
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to set a scaled score
-**
-*******************************************************************************/
-function xAPISetScore( value )
-{
-   if (window.localStorage.learnerId == null)
-   {
-      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
-   }
-
-   var stmt = {
-      "actor":{
-         "objectType":"Agent",
-         "account":{
-            "homePage":accountHomepage,
-            "name":window.localStorage.learnerId
-         }
-      },
-      "verb":ADL.verbs.scored,
-      "object":{
-         "objectType":"Activity",
-         "id":activity
-      },
-      "result":{
-         "score":{
-            
-         }
-      },
-      "context":{
-         "contextActivities":{
-            "parent":[
-               {
-                  "id":courseContextActivity,
-                  "objectType":"Activity"
-               }
-            ],
-            "grouping":[
-               {
-                  "id":window.localStorage[activity],
-                  "objectType":"Activity"
-               }
-            ]
-         }
-      }
-   };
-
-   "raw":parseFloat(value)
-
-    var response = ADL.XAPIWrapper.sendStatement(stmt);
-
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to complete an activity
-**
-*******************************************************************************/
-function xAPISetComplete( value )
-{
-   if (window.localStorage.learnerId == null)
-   {
-      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
-   }
-
-   if( value == "completed")
-   {
-      var stmt = {
-         "actor":{
-            "objectType":"Agent",
-            "account":{
-               "homePage":accountHomepage,
-               "name":window.localStorage.learnerId
-            }
-         },
-         "verb":ADL.verbs.completed,
-         "object":{
-            "objectType":"Activity",
-            "id":activity
-         },
-         "context":{
-            "contextActivities":{
-               "parent":[
-                  {
-                     "id":courseContextActivity,
-                     "objectType":"Activity"
-                  }
-               ],
-               "grouping":[
-                  {
-                     "id":window.localStorage[activity],
-                     "objectType":"Activity"
-                  }
-               ]
-            }
-         }
-      };
-
-       var response = ADL.XAPIWrapper.sendStatement(stmt); 
-   }
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to set pass/failed on an activity
-**
-*******************************************************************************/
-function xAPISetSuccess( value )
-{
-   if (window.localStorage.learnerId == null)
-   {
-      window.localStorage.learnerId = doLMSGetValue("cmi.core.student_id");
-   }
-
-   var verb = "";
-
-   if( value == "passed" )
-   {
-      verb = ADL.verbs.passed;
-   }
-   else if ( value == "failed" )
-   {
-      verb = ADL.verbs.failed;
-   }
-
-   if ( verb != "" )
-   {
-      var stmt = {
-         "actor":{
-            "objectType":"Agent",
-            "account":{
-               "homePage":accountHomepage,
-               "name":window.localStorage.learnerId
-            }
-         },
-         "verb":verb,
-         "object":{
-            "objectType":"Activity",
-            "id":activity
-         },
-         "context":{
-            "contextActivities":{
-               "parent":[
-                  {
-                     "id":courseContextActivity,
-                     "objectType":"Activity"
-                  }
-               ],
-               "grouping":[
-                  {
-                     "id":window.localStorage[activity],
-                     "objectType":"Activity"
-                  }
-               ]
-            }
-         }
-      };
-
-       var response = ADL.XAPIWrapper.sendStatement(stmt);      
-   }
-
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to configure LRS endpoint and basic auth values
-**
-*******************************************************************************/
-function xAPIConfigureLRS()
-{
-   var conf = {
-     "endpoint" : endpoint,
-     "user" : user,
-     "password" : password,
-   };
-
-   ADL.XAPIWrapper.changeConfig(conf);
-}
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to get the attempt context activity (grouping) id
-**
-*******************************************************************************/
-function configureAttemptContextActivityID( cmiEntryValue )
-{
-   if( cmiEntryValue == "resume" )
-   {
-      if( window.localStorage[activity] == null )
-      {
-         window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
-      }
-   }
-   else
-   {
-      window.localStorage[activity] = activity + "?attemptId=" + generateUUID();
-   }
-}
-
-
-/*******************************************************************************
-**
-** xAPI Extension
-**
-** This function is used to (most likely) get a unique guid to identify 
-** an attempt
-**
-*******************************************************************************/
-function generateUUID()
-{
-    var d = new Date().getTime();
-
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) 
-    {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-    });
-    
-    return uuid;
 }

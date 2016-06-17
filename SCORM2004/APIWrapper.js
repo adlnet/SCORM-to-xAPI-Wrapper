@@ -152,6 +152,17 @@ function doInitialize()
       initialized = true;
 
       // xAPI Extension
+      var config = {
+          lrs:{
+             endpoint:"<LRS Endpoint>",
+             user:"<LRS User>",
+             password:"<LRS Password>"
+          },
+          courseId:"<Course IRI>",
+          lmsHomePage:"<LMS Home Page>",
+          isScorm2004:true
+      }; // isSCORM2004:false above - to convert SCORM 1.2 courses
+      xapi.setConfig(config);
       xapi.initializeAttempt();
    }
 

@@ -11,6 +11,8 @@ xapi = function(){
 
    var _debug = true;
 
+
+
    /*******************************************************************************
    **
    ** Configuration object for a specific instance of the wrapper
@@ -50,6 +52,10 @@ xapi = function(){
       attemptStateIri:"https://w3id.org/xapi/scorm/attempt-state"
    };
 
+   var scormVersionConfig = {};
+
+   var exitSetToSuspend = false;
+
    /*******************************************************************************
    **
    ** Base statement
@@ -61,38 +67,50 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
       return {
          actor:{
                objectType:"Agent",
-               account:{
+               account:
+               {
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                }
-            },
-            verb:{},
-            object:{
-               objectType:"Activity",
-               id:activity
-            },
-            context:{
-               contextActivities:{
-                  parent:[
-                     {
-                        id:config.courseId,
-                        objectType:"Activity"
-                     }
-                  ],
-                  grouping:[
-                     {
-                        id:"",
-                        objectType:"Activity"
-                     }
-                  ]
-               }
+         },
+         verb:{},
+         object:{
+            id:activity,
+            definition:{
+               type: "http://adlnet.gov/expapi/activities/lesson"
             }
+         },
+         context:{
+            contextActivities:{
+               grouping:[
+                  {
+                     id:"",
+                     objectType:"Activity",
+                     definition:{
+                        type: "http://adlnet.gov/expapi/activities/attempt"
+                     }
+                  },
+                  {
+                     id:config.courseId,
+                     objectType:"Activity",
+                     definition:{
+                        type: "http://adlnet.gov/expapi/activities/course"
+                     }
+                  }
+               ],
+               category:[
+                  {
+                     id:"http://adlnet.gov/xapi/profile/scorm"
+                  }
+               ]
+            }
+         }
       };
    }
 
@@ -108,13 +126,14 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
       return {
          actor:{
                objectType:"Agent",
-               account:{
+               account:
+               {
                   homePage:config.lmsHomePage,
                   name:window.localStorage.learnerId
                }
@@ -124,9 +143,6 @@ xapi = function(){
                objectType:"Activity",
                id:"",
                definition:{
-                  description:{
-                     "en-US":""
-                  },
                   type: "http://adlnet.gov/expapi/activities/cmi.interaction",
                   interactionType:"",
                   correctResponsesPattern:[]
@@ -136,18 +152,32 @@ xapi = function(){
                contextActivities:{
                   parent:[
                      {
-                        id:config.courseId,
-                        objectType:"Activity"
-                     },
-                     {
                         id:activity,
-                        objectType:"Activity"
+                        objectType:"Activity",
+                        definition:{
+                           type: "http://adlnet.gov/expapi/activities/lesson"
+                        }
                      }
                   ],
                   grouping:[
                      {
                         id:"",
-                        objectType:"Activity"
+                        objectType:"Activity",
+                        definition:{
+                           type: "http://adlnet.gov/expapi/activities/attempt"
+                        }
+                     },
+                     {
+                        id:config.courseId,
+                        objectType:"Activity",
+                        definition:{
+                           type: "http://adlnet.gov/expapi/activities/course"
+                        }
+                     }
+                  ],
+                  category:[
+                     {
+                        id:"http://adlnet.gov/xapi/profile/scorm"
                      }
                   ]
                }
@@ -155,6 +185,37 @@ xapi = function(){
             result:{
                response:""
             }
+      };
+   }
+
+   /*******************************************************************************
+   **
+   ** Voided base statement
+   **
+   ** Must set verb and object to execute
+   **
+   *******************************************************************************/
+   var getVoidedBaseStatement = function()
+   {
+      if (window.localStorage.learnerId == null)
+      {
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
+      }
+
+      return {
+         actor:{
+               objectType:"Agent",
+               account:
+               {
+                  homePage:config.lmsHomePage,
+                  name:window.localStorage.learnerId
+               }
+         },
+         verb:{},
+         object:{
+            objectType:"StatementRef",
+            id:""
+         }
       };
    }
 
@@ -169,7 +230,7 @@ xapi = function(){
    {
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
       var agent = {account:
@@ -196,16 +257,73 @@ xapi = function(){
       // deprecated - set the agent profile information based on LMS learner_prefernces
       //setAgentProfile();
 
-      // set the attempt context activity based on the SCOs state
       // todo: add error handling to SCORM call
-      configureAttemptContextActivityID(retrieveDataValue("cmi.entry"));
+      // Determine whether this is a new or resumed attempt (based on cmi.entry)
+      var entry = retrieveDataValue(scormVersionConfig.entryElement);
+
+
+      var isResumed = (entry == "resume");
+
+      // if "resume", determine if the user issued a suspend sequencing nav
+      // request and a terminate was called instead of a suspend and if so, fix
+      if(isResumed)
+      {
+         adjustFinishStatementForResume();
+      }
+
+      // set the attempt context activity based on the SCOs state
+      configureAttemptContextActivityID(entry);
 
       // Set activity profile info and attempt state every initialize
+      // todo: these cause acceptable errors.  ensure they are not written to console
       setActivityProfile();
       setAttemptState();
 
-      sendSimpleStatement(ADL.verbs.initialized);
+      // Set the appropriate verb based on resumed or new attempt
+      var startVerb = isResumed ? ADL.verbs.resumed : ADL.verbs.initialized;
+
+      // Execute the statement
+      sendSimpleStatement(startVerb);
    }
+
+   /*******************************************************************************
+   **
+   ** This function looks at the last terminate or statement for a given attempt.
+   ** If "terminated", the terminated stmt is voided and a suspend is issued
+   **
+   *******************************************************************************/
+   var adjustFinishStatementForResume = function()
+   {
+      var search = ADL.XAPIWrapper.searchParams();
+      search['verb'] = ADL.verbs.terminated.id;
+      search['activity'] = window.localStorage[activity];
+      search['related_activities'] = true;
+
+      var res = ADL.XAPIWrapper.getStatements(search);
+
+      if (res.statements.length == 1)
+      {
+         // there is a terminate verb, so must void it and replace with suspended
+         // Note: if there is length == 0, no issue.
+         //       if length > 1, things are very messed up. Do nothing.
+
+         var terminateStmt = res.statements[0];
+
+         // send the voided statement
+         var voidedStmt = getVoidedBaseStatement();
+         voidedStmt.verb = ADL.verbs.voided;
+         voidedStmt.object.id = terminateStmt.id;
+
+         var response = ADL.XAPIWrapper.sendStatement(voidedStmt);
+
+         // send a suspended statement to replace the (voided) terminated statement
+         suspendAttempt(terminateStmt.timestamp);
+
+
+      }
+
+   }
+
 
    /*******************************************************************************
    **
@@ -222,9 +340,23 @@ xapi = function(){
    ** This function is used to suspent an attempt
    **
    *******************************************************************************/
-   var suspendAttempt = function()
+   var suspendAttempt = function(timestamp)
    {
-      sendSimpleStatement(ADL.verbs.suspended);
+      //sendSimpleStatement(ADL.verbs.suspended);
+      var stmt = getBaseStatement();
+      stmt.verb = ADL.verbs.suspended;
+
+      if (timestamp != undefined && timestamp != null)
+      {
+         stmt.timestamp = timestamp;
+      }
+
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
+      stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
+
+      var stmtWithResult = getStmtWithResult(stmt);
+      var response = ADL.XAPIWrapper.sendStatement(stmtWithResult);
    }
 
    /*******************************************************************************
@@ -234,9 +366,119 @@ xapi = function(){
    *******************************************************************************/
    var terminateAttempt = function()
    {
-      sendSimpleStatement(ADL.verbs.terminated);
+      //sendSimpleStatement(ADL.verbs.terminated);
+      var stmt = getBaseStatement();
+
+      // get the exit and use appropriate verb
+      var stopVerb = (exitSetToSuspend) ? ADL.verbs.suspended : ADL.verbs.terminated;
+
+      stmt.verb = stopVerb;
+
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
+      stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
+
+      var stmtWithResult = getStmtWithResult(stmt);
+      var response = ADL.XAPIWrapper.sendStatement(stmtWithResult);
 
       window.localStorage.removeItem("learnerId");
+   }
+
+   /*******************************************************************************
+   **
+   ** This function is used to complete the stmt result for terminate and suspend
+   **
+   *******************************************************************************/
+   var getStmtWithResult = function(baseStatement)
+   {
+      var success = retrieveDataValue(scormVersionConfig.successElement);
+      var completion = retrieveDataValue(scormVersionConfig.completionElement);
+      var scoreScaled = retrieveDataValue(scormVersionConfig.scoreScaledElement);
+      var scoreRaw = retrieveDataValue(scormVersionConfig.scoreRawElement);
+      var scoreMin = retrieveDataValue(scormVersionConfig.scoreMinElement);
+      var scoreMax = retrieveDataValue(scormVersionConfig.scoreMaxElement);
+
+      var resultSet = false;
+      var resultJson = {};
+      var scoreSet = false;
+      var scoreJson = {};
+
+      // create all of the statement json
+
+      // set success if known
+      if(success == "passed")
+      {
+         resultSet = true;
+         resultJson.success =  true;
+      }
+      else if(success == "failed")
+      {
+         resultSet = true;
+         resultJson.success = false;
+      }
+
+      // set completion if known
+      if(completion == "completed")
+      {
+         resultSet = true;
+         resultJson.completion =  true;
+      }
+      else if(completion == "incomplete")
+      {
+         resultSet = true;
+         resultJson.completion = false;
+      }
+
+      // set scaled score if set by sco
+      if(scoreScaled != undefined && scoreScaled != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.scaled =  parseFloat(scoreScaled);
+      }
+
+      // set raw score if set by sco
+      if(scoreRaw != undefined && scoreRaw != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.raw =  parseFloat(scoreRaw);
+
+         // if SCORM 1.2, use raw score / 100 for scaled score
+         if(!config.isScorm2004){
+            scoreJson.scaled = parseFloat(scoreRaw) / 100;
+         }
+      }
+
+      // set min score if set by sco
+      if(scoreMin != undefined && scoreMin != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.min =  parseFloat(scoreMin);
+      }
+
+      // set max score if set by sco
+      if(scoreMax != undefined && scoreMax != "")
+      {
+         scoreSet = true;
+         resultSet = true;
+         scoreJson.max =  parseFloat(scoreMax);
+      }
+
+      // set the score object in with the rest of the result object
+      if (scoreSet)
+      {
+         resultJson.score = scoreJson;
+      }
+
+      // add result to the base statement
+      if (resultSet)
+      {
+         baseStatement.result = resultJson;
+      }
+
+      return baseStatement;
    }
 
    /*******************************************************************************
@@ -251,13 +493,13 @@ xapi = function(){
 
       if (window.localStorage.learnerId == null)
       {
-         window.localStorage.learnerId = retrieveDataValue("cmi.learner_id");
+         window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
       }
 
-      var lang = retrieveDataValue("cmi.learner_preference.language");
-      var audioLevel = retrieveDataValue("cmi.learner_preference.audio_level");
-      var deliverySpeed = retrieveDataValue("cmi.learner_preference.delivery_speed");
-      var audioCaptioning = retrieveDataValue("cmi.learner_preference.audio_captioning");
+      var lang = retrieveDataValue(scormVersionConfig.languageElement);
+      var audioLevel = retrieveDataValue(scormVersionConfig.audioLevelElement);
+      var deliverySpeed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
+      var audioCaptioning = retrieveDataValue(scormVersionConfig.audioCaptioningElement);
 
       var profile = {
                      language: lang,
@@ -294,20 +536,19 @@ xapi = function(){
       if(ap == null)
       {
          // get comments from lms (if any)
-         var cmi_num_comments_from_lms_count = retrieveDataValue("cmi.comments_from_lms._count");
-
+         //var cmi_num_comments_from_lms_count = retrieveDataValue("cmi.comments_from_lms._count");
          // todo: get the comments, if any and add to array
 
          // get completion threshold (if supplied in manifest)
-         var cmi_completion_threshold = retrieveDataValue("cmi.completion_threshold");
-         var cmi_launch_data = retrieveDataValue("cmi.launch_data");
-         var cmi_max_time_allowed = retrieveDataValue("cmi.max_time_allowed");
-         var cmi_scaled_passing_score = retrieveDataValue("cmi.scaled_passing_score");
-         var cmi_time_limit_action = retrieveDataValue("cmi.time_limit_action");
+         var cmi_completion_threshold = retrieveDataValue(scormVersionConfig.completionThresholdElement);
+         var cmi_launch_data = retrieveDataValue(scormVersionConfig.launchDataElement);
+         var cmi_max_time_allowed = retrieveDataValue(scormVersionConfig.maxTimeAllowedElement);
+         var cmi_scaled_passing_score = retrieveDataValue(scormVersionConfig.scaledPassingScoreElement);
+         var cmi_time_limit_action = retrieveDataValue(scormVersionConfig.timeLimitActionElement);
 
          var activityProfile = {};
 
-         if (cmi_completion_threshold != "")
+         if (config.isScorm2004 && cmi_completion_threshold != "")
             activityProfile.completion_threshold = cmi_completion_threshold;
 
          if (cmi_launch_data != "")
@@ -338,6 +579,8 @@ xapi = function(){
    *******************************************************************************/
    var setActivityState = function()
    {
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
       var attemptIri = window.localStorage[activity];
 
       var agent = getAgent();
@@ -372,17 +615,19 @@ xapi = function(){
    *******************************************************************************/
    var setAttemptState = function()
    {
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
       var attemptIri = window.localStorage[activity];
       var agent = getAgent();
 
       // location, preferences object, credit, lesson_mode, suspend_data,
       // total_time, adl_data
-      var cmi_location = retrieveDataValue("cmi.location");
+      var cmi_location = retrieveDataValue(scormVersionConfig.locationElement);
 
-      var cmi_language = retrieveDataValue("cmi.learner_preference.language");
-      var cmi_audio_level = retrieveDataValue("cmi.learner_preference.audio_level");
-      var cmi_delivery_speed = retrieveDataValue("cmi.learner_preference.delivery_speed");
-      var cmi_audio_captioning = retrieveDataValue("cmi.learner_preference.audio_captioning");
+      var cmi_language = retrieveDataValue(scormVersionConfig.languageElement);
+      var cmi_audio_level = retrieveDataValue(scormVersionConfig.audioLevelElement);
+      var cmi_delivery_speed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
+      var cmi_audio_captioning = retrieveDataValue(scormVersionConfig.audioCaptioningElement);
 
       var preferences = {
                            language: cmi_language,
@@ -391,12 +636,12 @@ xapi = function(){
                            audio_captioning: cmi_audio_captioning
                         };
 
-      var cmi_credit = retrieveDataValue("cmi.credit");
-      var cmi_mode = retrieveDataValue("cmi.mode");
-      var cmi_suspend_data = retrieveDataValue("cmi.suspend_data");
-      var cmi_total_time = retrieveDataValue("cmi.total_time");
+      var cmi_credit = retrieveDataValue(scormVersionConfig.creditElement);
+      var cmi_mode = retrieveDataValue(scormVersionConfig.modeElement);
+      var cmi_suspend_data = retrieveDataValue(scormVersionConfig.suspendDataElement);
+      var cmi_total_time = retrieveDataValue(scormVersionConfig.totalTimeElement);
 
-      // todo: implement ADL data buckets and store in attempt state
+      // todo: implement adl.data buckets and store in attempt state
 
       // create the state object
       var state = {};
@@ -454,18 +699,17 @@ xapi = function(){
       {
          // Handle only non-array scorm data model elements
          switch (name) {
-            case "cmi.score.scaled":
-               setScore( value );
+            case scormVersionConfig.scoreScaledElement:
+               setScore(value);
                break;
-            case "cmi.completion_status":
+            case scormVersionConfig.completionElement:
                setComplete( value );
                break;
-            case "cmi.success_status":
+            case scormVersionConfig.successElement:
                setSuccess( value );
                break;
-            case "cmi.exit":
-               if (value == "suspend")
-                  suspendAttempt();
+            case scormVersionConfig.exitElement:
+               exitSetToSuspend = (value == "suspend");
                break;
             default:
                break;
@@ -549,7 +793,7 @@ xapi = function(){
             }
          }
       }
-      else if (subElement == "learner_response")
+      else if (subElement == "learner_response" || subElement == "student_response")
       {
          // find interaction with the same index and set type in JSON array
          for (var i=0; i < cachedInteractions.length; i++)
@@ -572,7 +816,10 @@ xapi = function(){
                stmt.result.response = cachedInteractions[i].learner_response;
 
                // todo: shouldn't assume en-US - implement with default if not specified, or use what was sent
-               stmt.object.definition.description["en-US"] = cachedInteractions[i].description;
+               if(config.isScorm2004)
+               {
+                  stmt.object.definition.description = {"en-US": cachedInteractions[i].description};
+               }
 
                // set the specific interaction type
                stmt.object.definition.interactionType = cachedInteractions[i].type;
@@ -599,6 +846,7 @@ xapi = function(){
                      break;
                }
 
+               // todo: make the subelement that you send stmt on configurable
                // send statement
                var response = ADL.XAPIWrapper.sendStatement(stmt);
 
@@ -617,7 +865,7 @@ xapi = function(){
    *******************************************************************************/
    var getInteractionIri = function(interactionId)
    {
-      return activity + "/interaction/" + encodeURIComponent(interactionId);
+      return activity + "/interactions/" + encodeURIComponent(interactionId);
    }
 
    /*******************************************************************************
@@ -627,12 +875,15 @@ xapi = function(){
    *******************************************************************************/
    var setScore = function(value)
    {
+      // For scorm 1.2, must divide raw by 100
+      var score = (config.isScorm2004) ? parseFloat(value) : parseFloat(value) / 100;
+
       var stmt = getBaseStatement();
       stmt.verb = ADL.verbs.scored;
       stmt.context.contextActivities.grouping[0].id = window.localStorage[activity];
 
       // todo: add error handling if value is not a valid scaled score
-      stmt.result =  {score: {scaled:parseFloat(value)}};
+      stmt.result =  {score: {scaled:score}};
 
       var response = ADL.XAPIWrapper.sendStatement(stmt);
    }
@@ -657,7 +908,52 @@ xapi = function(){
    *******************************************************************************/
    var setSuccess = function(value)
    {
-      sendSimpleStatement(ADL.verbs[value]);
+      // if SCORM 1.2, these could be complete/incomplete
+      if(value == "passed" || value == "failed")
+         sendSimpleStatement(ADL.verbs[value]);
+   }
+
+   /*******************************************************************************
+   **
+   ** This function is used to configure LRS endpoint and other values
+   **
+   *******************************************************************************/
+   var setConfig = function(iConfig)
+   {
+      config.lrs.endpoint = iConfig.lrs.endpoint;
+      config.lrs.user = iConfig.lrs.user;
+      config.lrs.password = iConfig.lrs.password;
+      config.courseId = iConfig.courseId;
+      config.lmsHomePage = iConfig.lmsHomePage;
+      config.isScorm2004 = iConfig.isScorm2004;
+
+      // setup SCORM object based on configuration
+      scormVersionConfig = {
+         learnerIdElement: (config.isScorm2004) ? "cmi.learner_id" : "cmi.core.student_id",
+         entryElement: ((config.isScorm2004 == true) ? "cmi.entry" : "cmi.core.entry"),
+         exitElement: (config.isScorm2004) ? "cmi.exit" : "cmi.core.exit",
+         successElement: (config.isScorm2004) ? "cmi.success_status" : "cmi.core.lesson_status",
+         completionElement: (config.isScorm2004) ? "cmi.completion_status" : "cmi.core.lesson_status",
+         scoreRawElement: (config.isScorm2004) ? "cmi.score.raw" : "cmi.core.score.raw",
+         scoreMinElement: (config.isScorm2004) ? "cmi.score.min" : "cmi.core.score.min",
+         scoreMaxElement: (config.isScorm2004) ? "cmi.score.max" : "cmi.core.score.max",
+         scoreScaledElement: (config.isScorm2004) ? "cmi.score.scaled" : "cmi.core.score.raw",
+         languageElement: (config.isScorm2004) ? "cmi.learner_preference.language" : "cmi.student_preference.language",
+         audioLevelElement: (config.isScorm2004) ? "cmi.learner_preference.audio_level" : "cmi.student_preference.audio",
+         deliverySpeedElement: (config.isScorm2004) ? "cmi.learner_preference.delivery_speed" : "cmi.student_preference.speed",
+         audioCaptioningElement: (config.isScorm2004) ? "cmi.learner_preference.audio_captioning" : "cmi.student_preference.text",
+         completionThresholdElement: (config.isScorm2004) ? "cmi.completion_threshold" : "",
+         launchDataElement: "cmi.launch_data",
+         maxTimeAllowedElement: (config.isScorm2004) ? "cmi.max_time_allowed" : "cmi.student_data.max_time_allowed",
+         scaledPassingScoreElement: (config.isScorm2004) ? "cmi.scaled_passing_score" : "cmi.student_data.mastery_score",
+         timeLimitActionElement: (config.isScorm2004) ? "cmi.time_limit_action" : "cmi.student_data.time_limit_action",
+         locationElement: (config.isScorm2004) ? "cmi.location" : "cmi.core.lesson_location",
+         creditElement: (config.isScorm2004) ? "cmi.credit" : "cmi.core.credit",
+         modeElement: (config.isScorm2004) ? "cmi.mode" : "cmi.core.lesson_mode",
+         suspendDataElement: "cmi.suspend_data",
+         totalTimeElement: (config.isScorm2004) ? "cmi.total_time" : "cmi.core.total_time"
+      }
+
    }
 
    /*******************************************************************************
@@ -683,6 +979,8 @@ xapi = function(){
    *******************************************************************************/
    var configureAttemptContextActivityID = function (cmiEntryValue)
    {
+      // window.localStorage[activity] uses activity id to return the most recent
+      // attempt
       if( cmiEntryValue == "resume" )
       {
          if( window.localStorage[activity] == null )
@@ -691,7 +989,7 @@ xapi = function(){
          }
 
          // send a resume statement
-         resumeAttempt();
+         //resumeAttempt();
 
       }
       else
@@ -738,7 +1036,7 @@ xapi = function(){
        return uuid;
    }
 
-   return{config:config,
+   return{setConfig:setConfig,
       initializeAttempt:initializeAttempt,
       resumeAttempt:resumeAttempt,
       suspendAttempt:suspendAttempt,
