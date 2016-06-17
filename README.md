@@ -5,9 +5,9 @@ This project contains a modified SCORM 2004 APIWrapper.js file and a new SCORM20
 For detailed technical information on xAPI, [read the Experience API Spec](https://github.com/adlnet/xAPI-Spec/blob/master/xAPI.md)
 
 ## Contributing to the project
-We welcome contributions to this project. Fork this repository, 
-make changes and submit pull requests. If you're not comfortable 
-with editing the code, please [submit an issue](https://github.com/adlnet/SCORM-to-xAPI-Wrapper/issues) and we'll be happy 
+We welcome contributions to this project. Fork this repository,
+make changes and submit pull requests. If you're not comfortable
+with editing the code, please [submit an issue](https://github.com/adlnet/SCORM-to-xAPI-Wrapper/issues) and we'll be happy
 to address it.  
 
 ## APIWrapper.js
@@ -26,7 +26,7 @@ The SCORM-to-xAPI-Wrapper relies on external dependencies to perform some action
 
 
 ### Configuration
-To update your SCORM 2004 courses to additionally track xAPI statements replace the APIWrapper.js file with the SCORM-to-xAPI-Wrapper and include two new files: 
+To update your SCORM 2004 courses to additionally track xAPI statements replace the APIWrapper.js file with the SCORM-to-xAPI-Wrapper and include two new files:
 
 * the standard xapiwrapper.min.js file listed in the dependency above
 * the new SCORM2004ToXAPIFunctions.js file included in this projecct
@@ -89,11 +89,11 @@ The following data model elements or behaviors result in associated xAPI stateme
 
 The following data is stored as either profile or state information
 
-**Activity Profile** 
+**Activity Profile**
 
 *Identified by:*
 * Activity IRI
-* Profile ID - http://adlnet.gov/xapi/profile/scorm/activity-profile
+* Profile ID - https://w3id.org/xapi/scorm/activity-profile
 
 *Data:*
 * completion_threshold (value of cmi.completion_threshold data)
@@ -107,7 +107,7 @@ The following data is stored as either profile or state information
 *Identified by:*
 * Activity IRI
 * Actor
-* State ID = http://adlnet.gov/xapi/profile/scorm/activity-state
+* State ID = https://w3id.org/xapi/scorm/activity-state
 
 *Data:*
 * attempts (Ordered list of attempt IRIs found as context in statements)
@@ -117,7 +117,7 @@ The following data is stored as either profile or state information
 *Identified by:*
 * Attempt IRI (context activity)
 * Actor
-* State ID = http://adlnet.gov/xapi/profile/scorm/attempt-state
+* State ID = https://w3id.org/xapi/scorm/attempt-state
 
 *Data:*
 * location (value of cmi.location)
