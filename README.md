@@ -28,7 +28,7 @@ The SCORM-to-xAPI-Wrapper relies on external dependencies to perform some action
 
 
 ### Configuration
-To update your SCORM 2004 courses to additionally track xAPI statements replace the appropriate APIWrapper.js file (1.2 or 2004 version depending on your SCORM version) with the SCORM-to-xAPI-Wrapper and include two new files:
+To update your SCORM 2004 courses to additionally track xAPI statements replace the appropriate APIWrapper.js file (1.2 or 2004 version depending on your SCORM version) with the SCORM-to-xAPI-Wrapper and include two new files:  
 
 * the standard xapiwrapper.min.js file listed in the dependency above
 * the new SCORMToXAPIFunctions.js file included in this projecct
@@ -91,7 +91,7 @@ The following data model elements or behaviors result in associated xAPI stateme
 
 The following data is stored as either profile or state information
 
-**Activity Profile**
+**Activity Profile**  
 
 *Identified by:*
 * Activity IRI
