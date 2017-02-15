@@ -26,7 +26,7 @@ JavaScript file that implements an "xapi" object that abstracts implementation d
 This version of the wrapper supports SCORM 2004 and SCORM 1.2.
 
 ### Dependencies
-The SCORM-to-xAPI-Wrapper relies on external dependencies to perform some actions. Make sure you download the minified [xAPI Wrapper](https://github.com/adlnet/xAPIWrapper/blob/master/xapiwrapper.min.js) to be included in your legacy SCORM courses.  Information on integration of this file is included in the Configuration section below.
+The SCORM-to-xAPI-Wrapper relies on external dependencies to perform some actions. Make sure you download the minified [xAPI Wrapper](https://github.com/adlnet/xAPIWrapper/blob/master/dist/xapiwrapper.min.js) to be included in your legacy SCORM courses.  Information on integration of this file is included in the Configuration section below.
 
 
 ### Configuration
