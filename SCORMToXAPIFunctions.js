@@ -73,18 +73,8 @@ xapi = function () {
      **
      *******************************************************************************/
     var getBaseStatement = function () {
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         return {
-            actor: {
-                objectType: "Agent",
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+            actor: getAgent(),
             verb: {},
             object: {
                 id: config.activityId,
@@ -129,18 +119,8 @@ xapi = function () {
      **
      *******************************************************************************/
     var getInteractionsBaseStatement = function () {
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         return {
-            actor: {
-                objectType: "Agent",
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+            actor: getAgent(),
             verb: ADL.verbs.responded,
             object: {
                 objectType: "Activity",
@@ -199,18 +179,8 @@ xapi = function () {
      **
      *******************************************************************************/
     var getVoidedBaseStatement = function () {
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         return {
-            actor: {
-                objectType: "Agent",
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+            actor: getAgent()},
             verb: {},
             object: {
                 objectType: "StatementRef",
@@ -235,7 +205,8 @@ xapi = function () {
             account: {
                 homePage: config.lmsHomePage,
                 name: window.localStorage.learnerId
-            }
+            },
+            objectType: "Agent"
         };
 
         return agent;
@@ -476,11 +447,6 @@ xapi = function () {
      **
      *******************************************************************************/
     var setAgentProfile = function () {
-
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         var lang = retrieveDataValue(scormVersionConfig.languageElement);
         var audioLevel = retrieveDataValue(scormVersionConfig.audioLevelElement);
         var deliverySpeed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
@@ -493,12 +459,8 @@ xapi = function () {
             audio_captioning: audioCaptioning
         };
 
-        ADL.XAPIWrapper.sendAgentProfile({
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+        ADL.XAPIWrapper.sendAgentProfile(
+            getAgent(),
             config.activityId,
             profile,
             null,

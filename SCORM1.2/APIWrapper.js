@@ -141,6 +141,7 @@ function doLMSInitialize()
    }
 
    var result = api.LMSInitialize("");
+   
    if (result.toString() != "true")
    {
       var err = ErrorHandler();
@@ -148,21 +149,10 @@ function doLMSInitialize()
    }
    else
    {
-	   initialized = true;
+      initialized = true;
 
-    // xAPI Extensions
-    var config = {
-        lrs:{
-           endpoint:"<LRS Endpoint>",
-           user:"<LRS User>",
-           password:"<LRS Password>"
-        },
-        courseId:"<Course IRI>",
-        lmsHomePage:"<LMS Home Page>",
-        isScorm2004:false
-    }; // isSCORM2004:true above - to convert SCORM 2004 courses
-    xapi.setConfig(config);
-    xapi.initializeAttempt();
+      //xAPI Extension
+      xapi.initializeAttempt();
 
    }
 
@@ -271,7 +261,7 @@ function doLMSSetValue(name, value)
    {
       message("Unable to locate the LMS's API Implementation.\nLMSSetValue was not successful.");
    }
-   else if (! initialized && ! doLMSInitialize())
+   else if (!initialized && !doLMSInitialize())
    {
       var err = ErrorHandler(); // get why doLMSInitialize() returned false
       message("LMSSetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
@@ -311,7 +301,7 @@ function doLMSCommit()
    {
       message("Unable to locate the LMS's API Implementation.\nLMSCommit was not successful.");
    }
-   else if (! initialized && ! doLMSInitialize())
+   else if (!initialized && ! doLMSInitialize())
    {
       var err = ErrorHandler(); // get why doLMSInitialize() returned false
       message("LMSCommit failed - Could not initialize communication with the LMS - error code: " + err.code);

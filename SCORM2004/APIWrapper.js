@@ -149,19 +149,15 @@ function doInitialize()
    }
    else
    {
-      // todo remove
-      message("Initialize succeeded");
-       
       initialized = true;
 
-      // xAPI Extension
+       // xAPI Extension
        xapi.initializeAttempt();
            
    }
 
    return result.toString();
 }
-
 
 /*******************************************************************************
 **
@@ -232,7 +228,6 @@ function doGetValue(name)
    }
    else
    {
-
       result = api.GetValue(name);
       
       var error = ErrorHandler();
