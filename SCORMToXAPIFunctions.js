@@ -180,7 +180,7 @@ xapi = function () {
      *******************************************************************************/
     var getVoidedBaseStatement = function () {
         return {
-            actor: getAgent()},
+            actor: getAgent(),
             verb: {},
             object: {
                 objectType: "StatementRef",
