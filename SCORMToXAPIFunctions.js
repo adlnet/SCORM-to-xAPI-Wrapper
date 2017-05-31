@@ -484,8 +484,11 @@ xapi = function () {
             //var cmi_num_comments_from_lms_count = retrieveDataValue("cmi.comments_from_lms._count");
             // todo: get the comments, if any and add to array
 
-            // get completion threshold (if supplied in manifest)
-            var cmi_completion_threshold = retrieveDataValue(scormVersionConfig.completionThresholdElement);
+            // get completion threshold (if supplied in manifest, only valid in SCORM2004)
+            var cmi_completion_threshold = "";
+            if (config.isScorm2004){
+                cmi_completion_threshold = retrieveDataValue(scormVersionConfig.completionThresholdElement);
+            }
             var cmi_launch_data = retrieveDataValue(scormVersionConfig.launchDataElement);
             var cmi_max_time_allowed = retrieveDataValue(scormVersionConfig.maxTimeAllowedElement);
             var cmi_scaled_passing_score = retrieveDataValue(scormVersionConfig.scaledPassingScoreElement);
@@ -565,7 +568,7 @@ xapi = function () {
         // location, preferences object, credit, lesson_mode, suspend_data, 
         // total_time, adl_data
         var cmi_location = retrieveDataValue(scormVersionConfig.locationElement);
-        
+
         var cmi_language = retrieveDataValue(scormVersionConfig.languageElement);
         var cmi_audio_level = retrieveDataValue(scormVersionConfig.audioLevelElement);
         var cmi_delivery_speed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);

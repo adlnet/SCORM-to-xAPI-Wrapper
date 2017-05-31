@@ -81,17 +81,17 @@ With the understanding that:
 **      functions as follows:
 **
 **    javascript:
-**          var result = doLMSInitialize();
+**          var result = LMSInitialize();
 **          if (result != true)
 **          {
 **             // handle error
 **          }
 **
 **    authorware:
-**          result := ReadURL("javascript:doLMSInitialize()", 100)
+**          result := ReadURL("javascript:LMSInitialize()", 100)
 **
 **    director:
-**          result = externalEvent("javascript:doLMSInitialize()")
+**          result = externalEvent("javascript:LMSInitialize()")
 **
 **
 *******************************************************************************/
@@ -112,14 +112,14 @@ var apiHandle = null;
 
 // xAPI Extention helper >
 // Pass-throughs to handle other common SCORM 1.2 wrapper versions.
-initializeCommunication = doLMSInitialize;
-terminateCommunication = doLMSFinish;
-storeDataValue = doLMSSetValue;
-retrieveDataValue = doLMSGetValue;
+initializeCommunication = LMSInitialize;
+terminateCommunication = LMSFinish;
+storeDataValue = LMSSetValue;
+retrieveDataValue = LMSGetValue;
 
 /*******************************************************************************
 **
-** Function: doLMSInitialize()
+** Function: LMSInitialize()
 ** Inputs:  None
 ** Return:  true if the initialization was successful, or
 **          false if the initialization failed.
@@ -129,7 +129,7 @@ retrieveDataValue = doLMSGetValue;
 ** function which will be implemented by the LMS.
 **
 *******************************************************************************/
-function doLMSInitialize()
+function LMSInitialize()
 {
    if (initialized) return "true";
 
@@ -161,7 +161,7 @@ function doLMSInitialize()
 
 /*******************************************************************************
 **
-** Function doLMSFinish()
+** Function LMSFinish()
 ** Inputs:  None
 ** Return:  true if successful
 **          false if failed.
@@ -171,7 +171,7 @@ function doLMSInitialize()
 ** function which will be implemented by the LMS
 **
 *******************************************************************************/
-function doLMSFinish()
+function LMSFinish()
 {
    if (! initialized) return "true";
 
@@ -202,7 +202,7 @@ function doLMSFinish()
 
 /*******************************************************************************
 **
-** Function doLMSGetValue(name)
+** Function LMSGetValue(name)
 ** Inputs:  name - string representing the cmi data model defined category or
 **             element (e.g. cmi.core.student_id)
 ** Return:  The value presently assigned by the LMS to the cmi data model
@@ -213,17 +213,18 @@ function doLMSFinish()
 ** Wraps the call to the LMS LMSGetValue method
 **
 *******************************************************************************/
-function doLMSGetValue(name)
+function LMSGetValue(name)
 {
+
    var api = getAPIHandle();
    var result = "";
    if (api == null)
    {
       message("Unable to locate the LMS's API Implementation.\nLMSGetValue was not successful.");
    }
-   else if (! initialized && ! doLMSInitialize())
+   else if (! initialized && ! LMSInitialize())
    {
-      var err = ErrorHandler(); // get why doLMSInitialize() returned false
+      var err = ErrorHandler(); // get why LMSInitialize() returned false
       message("LMSGetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
    }
    else
@@ -243,7 +244,7 @@ function doLMSGetValue(name)
 
 /*******************************************************************************
 **
-** Function doLMSSetValue(name, value)
+** Function LMSSetValue(name, value)
 ** Inputs:  name -string representing the data model defined category or element
 **          value -the value that the named element or category will be assigned
 ** Return:  true if successful
@@ -253,7 +254,7 @@ function doLMSGetValue(name)
 ** Wraps the call to the LMS LMSSetValue function
 **
 *******************************************************************************/
-function doLMSSetValue(name, value)
+function LMSSetValue(name, value)
 {
    var api = getAPIHandle();
    var result = "false";
@@ -261,9 +262,9 @@ function doLMSSetValue(name, value)
    {
       message("Unable to locate the LMS's API Implementation.\nLMSSetValue was not successful.");
    }
-   else if (!initialized && !doLMSInitialize())
+   else if (!initialized && !LMSInitialize())
    {
-      var err = ErrorHandler(); // get why doLMSInitialize() returned false
+      var err = ErrorHandler(); // get why LMSInitialize() returned false
       message("LMSSetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
    }
    else
@@ -284,7 +285,7 @@ function doLMSSetValue(name, value)
 
 /*******************************************************************************
 **
-** Function doLMSCommit()
+** Function LMSCommit()
 ** Inputs:  None
 ** Return:  true if successful
 **          false if failed.
@@ -293,7 +294,7 @@ function doLMSSetValue(name, value)
 ** Commits the data to the LMS.
 **
 *******************************************************************************/
-function doLMSCommit()
+function LMSCommit()
 {
    var api = getAPIHandle();
    var result = "false";
@@ -301,9 +302,9 @@ function doLMSCommit()
    {
       message("Unable to locate the LMS's API Implementation.\nLMSCommit was not successful.");
    }
-   else if (!initialized && ! doLMSInitialize())
+   else if (!initialized && ! LMSInitialize())
    {
-      var err = ErrorHandler(); // get why doLMSInitialize() returned false
+      var err = ErrorHandler(); // get why LMSInitialize() returned false
       message("LMSCommit failed - Could not initialize communication with the LMS - error code: " + err.code);
    }
    else
@@ -321,7 +322,7 @@ function doLMSCommit()
 
 /*******************************************************************************
 **
-** Function doLMSGetLastError()
+** Function LMSGetLastError()
 ** Inputs:  None
 ** Return:  The error code that was set by the last LMS function call
 **
@@ -329,7 +330,7 @@ function doLMSCommit()
 ** Call the LMSGetLastError function
 **
 *******************************************************************************/
-function doLMSGetLastError()
+function LMSGetLastError()
 {
    var api = getAPIHandle();
    if (api == null)
@@ -344,7 +345,7 @@ function doLMSGetLastError()
 
 /*******************************************************************************
 **
-** Function doLMSGetErrorString(errorCode)
+** Function LMSGetErrorString(errorCode)
 ** Inputs:  errorCode - Error Code
 ** Return:  The textual description that corresponds to the input error code
 **
@@ -352,7 +353,7 @@ function doLMSGetLastError()
 ** Call the LMSGetErrorString function
 **
 ********************************************************************************/
-function doLMSGetErrorString(errorCode)
+function LMSGetErrorString(errorCode)
 {
    var api = getAPIHandle();
    if (api == null)
@@ -366,7 +367,7 @@ function doLMSGetErrorString(errorCode)
 
 /*******************************************************************************
 **
-** Function doLMSGetDiagnostic(errorCode)
+** Function LMSGetDiagnostic(errorCode)
 ** Inputs:  errorCode - Error Code(integer format), or null
 ** Return:  The vendor specific textual description that corresponds to the
 **          input error code
@@ -375,7 +376,7 @@ function doLMSGetErrorString(errorCode)
 ** Call the LMSGetDiagnostic function
 **
 *******************************************************************************/
-function doLMSGetDiagnostic(errorCode)
+function LMSGetDiagnostic(errorCode)
 {
    var api = getAPIHandle();
    if (api == null)
@@ -465,7 +466,7 @@ function getAPIHandle()
 *******************************************************************************/
 function findAPI(win)
 {
-	var findAPITries = 0;
+  var findAPITries = 0;
    while ((win.API == null) && (win.parent != null) && (win.parent != win))
    {
       findAPITries++;
