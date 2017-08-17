@@ -13,8 +13,6 @@ This javascript file is typically used in SCORM 2004 courses.  If the ADL-provid
 Note: The updated APIWrapper.js file does not stand-alone and MUST be  used with the SCORMToXAPIFunctions.js file.
 
 ## SCORM1.2/APIWrapper.js
-NOTE - THIS VERSION IS CURRENTLY OUT OF DATE.  PLEASE SEE THE 2004 WRAPPER UNTIL THIS ISSUE IS ADDRESSED.
-
 Javascript SCORM 1.2 API wrapper with new xAPI object (Implemented in SCORMToXAPIFunctions.js).  
 This javascript file is typically used in SCORM 1.2 courses.  If the ADL-provided ADLWrapper.js file is used in your SCORM courses, it can be replaced with this file.
 
@@ -57,15 +55,18 @@ var activity = <manually configured URI goes here>;
 
 Finally, several configuration values must be set in the updated APIWrapper.js file (init method).  Instructions are also included in the header at the top of the JavaScript file. Near the top of the file, configure the following lines of code:
 ```JavaScript
- var config = {
-    lrs:{
-       endpoint:"https://lrs.adlnet.gov/xapi/",
-       user:"<lrs user>",
-       password:"<lrs password>"
-    },
-    courseId:"<course identifier/uri>",
-    lmsHomePage:"<lms homepage>"
- };
+    var config = {
+        lrs: {
+            endpoint: "https://lrs.adlnet.gov/xapi/",
+            user: "",
+            password: ""
+        },
+        courseId: "",
+        lmsHomePage: "",
+        isScorm2004: true,
+        activityId: "",
+        groupingContextActivity: {}
+    };
 ```  
 
 ### Limitations

@@ -149,19 +149,16 @@ function doInitialize()
    }
    else
    {
-      // todo remove
-      message("Initialize succeeded");
-       
       initialized = true;
 
-      // xAPI Extension
+       // xAPI Extension
        xapi.initializeAttempt();
+       doSetValue("cmi.progress_measure", 0.0);
            
    }
 
    return result.toString();
 }
-
 
 /*******************************************************************************
 **
@@ -189,7 +186,8 @@ function doTerminate()
    {
       // xAPI Extension
       xapi.terminateAttempt();
-
+      doSetValue("cmi.progress_measure", 0.99);
+      xapi.measureProgress();
       // call the Terminate function that should be implemented by the API
       var result = api.Terminate("");
       if (result.toString() != "true")
@@ -203,6 +201,9 @@ function doTerminate()
 
    return result.toString();
 }
+
+
+
 
 /*******************************************************************************
 **
@@ -232,7 +233,6 @@ function doGetValue(name)
    }
    else
    {
-
       result = api.GetValue(name);
       
       var error = ErrorHandler();

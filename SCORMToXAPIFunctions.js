@@ -73,18 +73,8 @@ xapi = function () {
      **
      *******************************************************************************/
     var getBaseStatement = function () {
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         return {
-            actor: {
-                objectType: "Agent",
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+            actor: getAgent(),
             verb: {},
             object: {
                 id: config.activityId,
@@ -129,18 +119,8 @@ xapi = function () {
      **
      *******************************************************************************/
     var getInteractionsBaseStatement = function () {
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         return {
-            actor: {
-                objectType: "Agent",
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+            actor: getAgent(),
             verb: ADL.verbs.responded,
             object: {
                 objectType: "Activity",
@@ -199,18 +179,8 @@ xapi = function () {
      **
      *******************************************************************************/
     var getVoidedBaseStatement = function () {
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         return {
-            actor: {
-                objectType: "Agent",
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+            actor: getAgent(),
             verb: {},
             object: {
                 objectType: "StatementRef",
@@ -235,7 +205,8 @@ xapi = function () {
             account: {
                 homePage: config.lmsHomePage,
                 name: window.localStorage.learnerId
-            }
+            },
+            objectType: "Agent"
         };
 
         return agent;
@@ -347,7 +318,7 @@ xapi = function () {
         // window.localStorage[activity] uses activity id to return the most recent
         // attempt
         stmt.context.contextActivities.grouping[0].id = window.localStorage[config.activityId];
-        
+
         // set the context activity from the manifest/launch_data to group together
         // for an event
         stmt.context.contextActivities.grouping.push(config.groupingContextActivity);
@@ -373,7 +344,7 @@ xapi = function () {
         // window.localStorage[activity] uses activity id to return the most recent
         // attempt
         stmt.context.contextActivities.grouping[0].id = window.localStorage[config.activityId];
-        
+
         // set the context activity from the manifest/launch_data to group together
         // for an event
         stmt.context.contextActivities.grouping.push(config.groupingContextActivity);
@@ -396,6 +367,7 @@ xapi = function () {
         var scoreRaw = retrieveDataValue(scormVersionConfig.scoreRawElement);
         var scoreMin = retrieveDataValue(scormVersionConfig.scoreMinElement);
         var scoreMax = retrieveDataValue(scormVersionConfig.scoreMaxElement);
+        var sessionTime = retrieveDataValue(scormVersionConfig.sessionTimeElement);
 
         var resultSet = false;
         var resultJson = {};
@@ -455,6 +427,12 @@ xapi = function () {
             scoreJson.max = parseFloat(scoreMax);
         }
 
+        // include sessionTime if set by sco
+        if (sessionTime != undefined && sessionTime != ""){
+            resultSet = true;
+            resultJson.duration = sessionTime;
+        }
+
         // set the score object in with the rest of the result object
         if (scoreSet) {
             resultJson.score = scoreJson;
@@ -476,11 +454,6 @@ xapi = function () {
      **
      *******************************************************************************/
     var setAgentProfile = function () {
-
-        if (window.localStorage.learnerId == null) {
-            window.localStorage.learnerId = retrieveDataValue(scormVersionConfig.learnerIdElement);
-        }
-
         var lang = retrieveDataValue(scormVersionConfig.languageElement);
         var audioLevel = retrieveDataValue(scormVersionConfig.audioLevelElement);
         var deliverySpeed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
@@ -493,12 +466,8 @@ xapi = function () {
             audio_captioning: audioCaptioning
         };
 
-        ADL.XAPIWrapper.sendAgentProfile({
-                account: {
-                    homePage: config.lmsHomePage,
-                    name: window.localStorage.learnerId
-                }
-            },
+        ADL.XAPIWrapper.sendAgentProfile(
+            getAgent(),
             config.activityId,
             profile,
             null,
@@ -518,12 +487,11 @@ xapi = function () {
         var ap = ADL.XAPIWrapper.getActivityProfile(config.activityId, constants.activityProfileIri);
 
         if (ap == null) {
-            // get comments from lms (if any)
-            //var cmi_num_comments_from_lms_count = retrieveDataValue("cmi.comments_from_lms._count");
-            // todo: get the comments, if any and add to array
-
-            // get completion threshold (if supplied in manifest)
-            var cmi_completion_threshold = retrieveDataValue(scormVersionConfig.completionThresholdElement);
+            // get completion threshold (if supplied in manifest, only valid in SCORM2004)
+            var cmi_completion_threshold = "";
+            if (config.isScorm2004){
+                cmi_completion_threshold = retrieveDataValue(scormVersionConfig.completionThresholdElement);
+            }
             var cmi_launch_data = retrieveDataValue(scormVersionConfig.launchDataElement);
             var cmi_max_time_allowed = retrieveDataValue(scormVersionConfig.maxTimeAllowedElement);
             var cmi_scaled_passing_score = retrieveDataValue(scormVersionConfig.scaledPassingScoreElement);
@@ -603,7 +571,7 @@ xapi = function () {
         // location, preferences object, credit, lesson_mode, suspend_data, 
         // total_time, adl_data
         var cmi_location = retrieveDataValue(scormVersionConfig.locationElement);
-        
+
         var cmi_language = retrieveDataValue(scormVersionConfig.languageElement);
         var cmi_audio_level = retrieveDataValue(scormVersionConfig.audioLevelElement);
         var cmi_delivery_speed = retrieveDataValue(scormVersionConfig.deliverySpeedElement);
@@ -842,6 +810,10 @@ xapi = function () {
     var setScore = function (value) {
         // For scorm 1.2, must divide raw by 100
         var score = (config.isScorm2004) ? parseFloat(value) : parseFloat(value) / 100;
+        // Can't send statement if score is not a proper float
+        if (isNaN(score)){
+            return;
+        }
 
         var stmt = getBaseStatement();
         stmt.verb = ADL.verbs.scored;
@@ -851,7 +823,6 @@ xapi = function () {
         // for an event
         stmt.context.contextActivities.grouping.push(config.groupingContextActivity);
 
-        // todo: add error handling if value is not a valid scaled score
         stmt.result = {
             score: {
                 scaled: score
@@ -871,6 +842,34 @@ xapi = function () {
             sendSimpleStatement(ADL.verbs.completed);
         }
     }
+
+
+    /*******************************************************************************
+     **
+     ** This function is used to measure progress in an activity
+     **
+     *******************************************************************************/
+    var measureProgress = function () {
+        if (config.isScorm2004) {
+            var stmt = getBaseStatement();
+            stmt.verb = ADL.verbs.progressed;
+            stmt.context.contextActivities.grouping[0].id = window.localStorage[config.activityId];
+            var progressMeasure = parseFloat(retrieveDataValue(scormVersionConfig.progressMeasureElement));
+            if (!isNaN(progressMeasure)){
+                stmt.result = {
+                    score: {
+                        scaled: progressMeasure 
+                    }
+                };
+            }
+
+            // set the context activity from the manifest/launch_data to group together
+            // for an event
+            stmt.context.contextActivities.grouping.push(config.groupingContextActivity);
+            var response = ADL.XAPIWrapper.sendStatement(stmt);
+        }
+    }
+
 
     /*******************************************************************************
      **
@@ -973,7 +972,14 @@ xapi = function () {
             creditElement: (config.isScorm2004) ? "cmi.credit" : "cmi.core.credit",
             modeElement: (config.isScorm2004) ? "cmi.mode" : "cmi.core.lesson_mode",
             suspendDataElement: "cmi.suspend_data",
-            totalTimeElement: (config.isScorm2004) ? "cmi.total_time" : "cmi.core.total_time"
+            totalTimeElement: (config.isScorm2004) ? "cmi.total_time" : "cmi.core.total_time",
+            //new stuff here
+            sessionTimeElement: (config.isScorm2004) ? "cmi.session_time" : "cmi.core.session_time",
+            progressMeasureElement: (config.isScorm2004) ? "cmi.progress_measure" : "",
+            interactionsElement: "cmi.interactions",
+            objectivesElement: "cmi.objectives",
+            learnerCommentsElement: (config.isScorm2004) ? "cmi.comments_from_learner" : "cmi.comments",
+            LMSCommentsElement: "cmi.comments_from_lms",
         }
 
     }
@@ -1070,7 +1076,8 @@ xapi = function () {
         setScore: setScore,
         setComplete: setComplete,
         setSuccess: setSuccess,
-        configureLRS: configureLRS
+        configureLRS: configureLRS,
+        measureProgress:measureProgress
     }
 
     // 

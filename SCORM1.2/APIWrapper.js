@@ -125,7 +125,7 @@ retrieveDataValue = doLMSGetValue;
 **          false if the initialization failed.
 **
 ** Description:
-** Initialize communication with LMS by calling the LMSInitialize
+** Initialize communication with LMS by calling the doLMSInitialize
 ** function which will be implemented by the LMS.
 **
 *******************************************************************************/
@@ -136,33 +136,23 @@ function doLMSInitialize()
    var api = getAPIHandle();
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSInitialize was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSInitialize was not successful.");
       return "false";
    }
 
-   var result = api.LMSInitialize("");
+   var result = api.doLMSInitialize("");
+   
    if (result.toString() != "true")
    {
       var err = ErrorHandler();
-      message("LMSInitialize failed with error code: " + err.code);
+      message("doLMSInitialize failed with error code: " + err.code);
    }
    else
    {
-	   initialized = true;
+      initialized = true;
 
-    // xAPI Extensions
-    var config = {
-        lrs:{
-           endpoint:"<LRS Endpoint>",
-           user:"<LRS User>",
-           password:"<LRS Password>"
-        },
-        courseId:"<Course IRI>",
-        lmsHomePage:"<LMS Home Page>",
-        isScorm2004:false
-    }; // isSCORM2004:true above - to convert SCORM 2004 courses
-    xapi.setConfig(config);
-    xapi.initializeAttempt();
+      //xAPI Extension
+      xapi.initializeAttempt();
 
    }
 
@@ -177,7 +167,7 @@ function doLMSInitialize()
 **          false if failed.
 **
 ** Description:
-** Close communication with LMS by calling the LMSFinish
+** Close communication with LMS by calling the doLMSFinish
 ** function which will be implemented by the LMS
 **
 *******************************************************************************/
@@ -188,7 +178,7 @@ function doLMSFinish()
    var api = getAPIHandle();
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSFinish was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSFinish was not successful.");
       return "false";
    }
    else
@@ -196,12 +186,12 @@ function doLMSFinish()
       // xAPI Extension
       xapi.terminateAttempt();
 
-      // call the LMSFinish function that should be implemented by the API
-      var result = api.LMSFinish("");
+      // call the doLMSFinish function that should be implemented by the API
+      var result = api.doLMSFinish("");
       if (result.toString() != "true")
       {
          var err = ErrorHandler();
-         message("LMSFinish failed with error code: " + err.code);
+         message("doLMSFinish failed with error code: " + err.code);
       }
    }
 
@@ -220,31 +210,32 @@ function doLMSFinish()
 **       input value.
 **
 ** Description:
-** Wraps the call to the LMS LMSGetValue method
+** Wraps the call to the LMS doLMSGetValue method
 **
 *******************************************************************************/
 function doLMSGetValue(name)
 {
+
    var api = getAPIHandle();
    var result = "";
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSGetValue was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSGetValue was not successful.");
    }
    else if (! initialized && ! doLMSInitialize())
    {
       var err = ErrorHandler(); // get why doLMSInitialize() returned false
-      message("LMSGetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
+      message("doLMSGetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
    }
    else
    {
-      result = api.LMSGetValue(name);
+      result = api.doLMSGetValue(name);
 
       var error = ErrorHandler();
       if (error.code != _NoError.code)
       {
          // an error was encountered so display the error description
-         message("LMSGetValue("+name+") failed. \n"+ error.code + ": " + error.string);
+         message("doLMSGetValue("+name+") failed. \n"+ error.code + ": " + error.string);
          result = "";
       }
    }
@@ -260,7 +251,7 @@ function doLMSGetValue(name)
 **          false if failed.
 **
 ** Description:
-** Wraps the call to the LMS LMSSetValue function
+** Wraps the call to the LMS doLMSSetValue function
 **
 *******************************************************************************/
 function doLMSSetValue(name, value)
@@ -269,23 +260,23 @@ function doLMSSetValue(name, value)
    var result = "false";
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSSetValue was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSSetValue was not successful.");
    }
-   else if (! initialized && ! doLMSInitialize())
+   else if (!initialized && !doLMSInitialize())
    {
       var err = ErrorHandler(); // get why doLMSInitialize() returned false
-      message("LMSSetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
+      message("doLMSSetValue failed - Could not initialize communication with the LMS - error code: " + err.code);
    }
    else
    {
       // xAPI Extension
       xapi.saveDataValue(name, value);
 
-      result = api.LMSSetValue(name, value);
+      result = api.doLMSSetValue(name, value);
       if (result.toString() != "true")
       {
          var err = ErrorHandler();
-         message("LMSSetValue("+name+", "+value+") failed. \n"+ err.code + ": " + err.string);
+         message("doLMSSetValue("+name+", "+value+") failed. \n"+ err.code + ": " + err.string);
       }
    }
 
@@ -309,20 +300,20 @@ function doLMSCommit()
    var result = "false";
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSCommit was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSCommit was not successful.");
    }
-   else if (! initialized && ! doLMSInitialize())
+   else if (!initialized && ! doLMSInitialize())
    {
       var err = ErrorHandler(); // get why doLMSInitialize() returned false
-      message("LMSCommit failed - Could not initialize communication with the LMS - error code: " + err.code);
+      message("doLMSCommit failed - Could not initialize communication with the LMS - error code: " + err.code);
    }
    else
    {
-      result = api.LMSCommit("");
+      result = api.doLMSCommit("");
       if (result != "true")
       {
          var err = ErrorHandler();
-         message("LMSCommit failed - error code: " + err.code);
+         message("doLMSCommit failed - error code: " + err.code);
       }
    }
 
@@ -336,7 +327,7 @@ function doLMSCommit()
 ** Return:  The error code that was set by the last LMS function call
 **
 ** Description:
-** Call the LMSGetLastError function
+** Call the doLMSGetLastError function
 **
 *******************************************************************************/
 function doLMSGetLastError()
@@ -344,12 +335,12 @@ function doLMSGetLastError()
    var api = getAPIHandle();
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSGetLastError was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSGetLastError was not successful.");
       //since we can't get the error code from the LMS, return a general error
       return _GeneralException.code; //General Exception
    }
 
-   return api.LMSGetLastError().toString();
+   return api.doLMSGetLastError().toString();
 }
 
 /*******************************************************************************
@@ -359,7 +350,7 @@ function doLMSGetLastError()
 ** Return:  The textual description that corresponds to the input error code
 **
 ** Description:
-** Call the LMSGetErrorString function
+** Call the doLMSGetErrorString function
 **
 ********************************************************************************/
 function doLMSGetErrorString(errorCode)
@@ -367,11 +358,11 @@ function doLMSGetErrorString(errorCode)
    var api = getAPIHandle();
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSGetErrorString was not successful.");
+      message("Unable to locate the LMS's API Implementation.\ndoLMSGetErrorString was not successful.");
       return _GeneralException.string;
    }
 
-   return api.LMSGetErrorString(errorCode).toString();
+   return api.doLMSGetErrorString(errorCode).toString();
 }
 
 /*******************************************************************************
@@ -382,7 +373,7 @@ function doLMSGetErrorString(errorCode)
 **          input error code
 **
 ** Description:
-** Call the LMSGetDiagnostic function
+** Call the doLMSGetDiagnostic function
 **
 *******************************************************************************/
 function doLMSGetDiagnostic(errorCode)
@@ -390,11 +381,11 @@ function doLMSGetDiagnostic(errorCode)
    var api = getAPIHandle();
    if (api == null)
    {
-      message("Unable to locate the LMS's API Implementation.\nLMSGetDiagnostic was not successful.");
-      return "Unable to locate the LMS's API Implementation. LMSGetDiagnostic was not successful.";
+      message("Unable to locate the LMS's API Implementation.\ndoLMSGetDiagnostic was not successful.");
+      return "Unable to locate the LMS's API Implementation. doLMSGetDiagnostic was not successful.";
    }
 
-   return api.LMSGetDiagnostic(errorCode).toString();
+   return api.doLMSGetDiagnostic(errorCode).toString();
 }
 
 /*******************************************************************************
@@ -430,12 +421,12 @@ function ErrorHandler()
    }
 
    // check for errors caused by or from the LMS
-   error.code = api.LMSGetLastError().toString();
+   error.code = api.doLMSGetLastError().toString();
    if (error.code != _NoError.code)
    {
       // an error was encountered so display the error description
-      error.string = api.LMSGetErrorString(error.code);
-      error.diagnostic = api.LMSGetDiagnostic("");
+      error.string = api.doLMSGetErrorString(error.code);
+      error.diagnostic = api.doLMSGetDiagnostic("");
    }
 
    return error;
@@ -475,7 +466,7 @@ function getAPIHandle()
 *******************************************************************************/
 function findAPI(win)
 {
-	var findAPITries = 0;
+  var findAPITries = 0;
    while ((win.API == null) && (win.parent != null) && (win.parent != win))
    {
       findAPITries++;
