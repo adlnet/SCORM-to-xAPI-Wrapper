@@ -101,20 +101,23 @@ xapi = function () {
                             definition: {
                                 type: "http://adlnet.gov/expapi/activities/attempt"
                             }
-                  },
+                        },
                         {
                             id: config.courseId,
                             objectType: "Activity",
                             definition: {
                                 type: "http://adlnet.gov/expapi/activities/course"
                             }
-                  }
-               ],
+                        }
+                    ],
                     category: [
                         {
-                            id: "https://w3id.org/xapi/scorm"
-                  }
-               ]
+                            id: "https://w3id.org/xapi/scorm",
+                            definition: {
+                                type: "http://adlnet.gov/expapi/activities/profile"
+                            }
+                        }
+                    ]
                 }
             }
         };
@@ -160,8 +163,8 @@ xapi = function () {
                             definition: {
                                 type: "http://adlnet.gov/expapi/activities/lesson"
                             }
-                     }
-                  ],
+                        }
+                    ],
                     grouping: [
                         {
                             id: "",
@@ -169,20 +172,23 @@ xapi = function () {
                             definition: {
                                 type: "http://adlnet.gov/expapi/activities/attempt"
                             }
-                     },
+                        },
                         {
                             id: config.courseId,
                             objectType: "Activity",
                             definition: {
                                 type: "http://adlnet.gov/expapi/activities/course"
                             }
-                     }
-                  ],
+                        }
+                    ],
                     category: [
                         {
-                            id: "https://w3id.org/xapi/scorm"
-                     }
-                  ]
+                            id: "https://w3id.org/xapi/scorm",
+                            definition: {
+                                type: "http://adlnet.gov/expapi/activities/profile"
+                            }
+                        }
+                    ]
                 }
             },
             result: {
@@ -314,10 +320,7 @@ xapi = function () {
 
             // send a suspended statement to replace the (voided) terminated statement
             suspendAttempt(terminateStmt.timestamp);
-
-
         }
-
     }
 
 
@@ -643,8 +646,6 @@ xapi = function () {
         if (cmi_total_time != "")
             state.total_time = cmi_total_time;
 
-
-
         // see if the profile is already set
         var as = ADL.XAPIWrapper.getState(attemptIri, agent, constants.attemptStateIri);
 
@@ -665,35 +666,37 @@ xapi = function () {
      **
      *******************************************************************************/
     var saveDataValue = function (name, value) {
-            var isInteraction = name.indexOf("cmi.interactions") > -1;
+        var isInteraction = name.indexOf("cmi.interactions") > -1;
 
-            if (isInteraction) {
-                setInteraction(name, value);
-            } else {
-                // Handle only non-array scorm data model elements  
-                switch (name) {
-                    case scormVersionConfig.scoreScaledElement:
-                        setScore(value);
-                        break;
-                    case scormVersionConfig.completionElement:
-                        setComplete(value);
-                        break;
-                    case scormVersionConfig.successElement:
-                        setSuccess(value);
-                        break;
-                    case scormVersionConfig.exitElement:
-                        exitSetToSuspend = (value == "suspend");
-                        break;
-                    default:
-                        break;
-                }
+        if (isInteraction) {
+            setInteraction(name, value);
+        } else {
+            // Handle only non-array scorm data model elements  
+            switch (name) {
+                case scormVersionConfig.scoreScaledElement:
+                    setScore(value);
+                    break;
+                case scormVersionConfig.completionElement:
+                    setComplete(value);
+                    break;
+                case scormVersionConfig.successElement:
+                    setSuccess(value);
+                    break;
+                case scormVersionConfig.exitElement:
+                    exitSetToSuspend = (value == "suspend");
+                    break;
+                default:
+                    break;
             }
         }
-        /*******************************************************************************
-         **
-         ** This function/vars is used to handle the interaction type
-         **
-         *******************************************************************************/
+    }
+
+        
+    /*******************************************************************************
+     **
+     ** This function/vars is used to handle the interaction type
+     **
+     *******************************************************************************/
     var setInteraction = function (name, value) {
         // key for interactions in local storage is scoped to an attempt
         var interactionsKey = window.localStorage[config.activityId] + "_interactions";
@@ -822,8 +825,8 @@ xapi = function () {
                 }
             }
         }
-
     }
+
 
     /*******************************************************************************
      **
@@ -833,6 +836,7 @@ xapi = function () {
     var getInteractionIri = function (interactionId) {
         return config.activityId + "/interactions/" + encodeURIComponent(interactionId);
     }
+
 
     /*******************************************************************************
      **
@@ -975,7 +979,6 @@ xapi = function () {
             suspendDataElement: "cmi.suspend_data",
             totalTimeElement: (config.isScorm2004) ? "cmi.total_time" : "cmi.core.total_time"
         }
-
     }
 
     /*******************************************************************************
